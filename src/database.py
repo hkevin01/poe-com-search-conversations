@@ -694,3 +694,24 @@ class ConversationDatabase:
                 "indexes": indexes,
                 "sqlite_version": sqlite3.sqlite_version
             }
+    
+    def add_url_column_if_missing(self):
+        """Add URL column to conversations table if it doesn't exist."""
+        try:
+            # Check if URL column exists
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+                cursor.execute("PRAGMA table_info(conversations)")
+                columns = [column[1] for column in cursor.fetchall()]
+                
+                if 'url' not in columns:
+                    self.logger.info("📝 Adding URL column to conversations table...")
+                    cursor.execute("ALTER TABLE conversations ADD COLUMN url TEXT")
+                    conn.commit()
+                    self.logger.info("✅ URL column added successfully")
+                else:
+                    self.logger.debug("✅ URL column already exists")
+                
+        except Exception as e:
+            self.logger.error(f"❌ Failed to add URL column: {e}")
+            raise

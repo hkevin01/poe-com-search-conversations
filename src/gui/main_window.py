@@ -136,133 +136,446 @@ class ConversationViewer(QScrollArea):
                 child.widget().deleteLater()
     
     def display_conversation(self, conversation: Conversation):
-        """Display a conversation's content."""
+        """Display a conversation's content with enhanced styling."""
         self.clear_content()
         
-        # Conversation header
+        # Conversation header with enhanced styling
         header_frame = QFrame()
         header_frame.setFrameStyle(QFrame.Shape.Box)
         header_frame.setStyleSheet("""
             QFrame {
                 background-color: white;
-                border: 1px solid #dee2e6;
-                border-radius: 5px;
-                padding: 10px;
-                margin: 5px;
+                border: 2px solid #0078D4;
+                border-radius: 12px;
+                padding: 20px;
+                margin: 10px;
             }
         """)
         
         header_layout = QVBoxLayout(header_frame)
         
-        # Title
+        # Title with enhanced styling
         title_label = QLabel(conversation.title)
-        title_label.setFont(QFont("Arial", 14, QFont.Weight.Bold))
+        title_label.setFont(QFont("Segoe UI", 18, QFont.Weight.Bold))
         title_label.setWordWrap(True)
+        title_label.setStyleSheet("""
+            QLabel {
+                color: #0078D4;
+                margin-bottom: 15px;
+                padding: 10px;
+                background-color: #F0F8FF;
+                border-radius: 8px;
+            }
+        """)
         header_layout.addWidget(title_label)
         
-        # Metadata
-        metadata_layout = QHBoxLayout()
+        # Metadata section with cards
+        metadata_frame = QFrame()
+        metadata_frame.setStyleSheet("""
+            QFrame {
+                background-color: #F8F9FA;
+                border-radius: 8px;
+                padding: 15px;
+                margin: 5px 0px;
+            }
+        """)
+        metadata_layout = QHBoxLayout(metadata_frame)
         
+        # Bot info card
         if conversation.bot_name:
-            bot_label = QLabel(f"🤖 Bot: {conversation.bot_name}")
-            metadata_layout.addWidget(bot_label)
+            bot_card = QLabel(f"🤖 {conversation.bot_name}")
+            bot_card.setStyleSheet("""
+                QLabel {
+                    background-color: #E8F5E8;
+                    color: #2E7D32;
+                    padding: 8px 12px;
+                    border-radius: 6px;
+                    font-weight: bold;
+                    border: 1px solid #4CAF50;
+                }
+            """)
+            metadata_layout.addWidget(bot_card)
         
+        # Date card
         if conversation.created_at:
-            date_label = QLabel(f"📅 Created: {conversation.created_at.strftime('%Y-%m-%d %H:%M')}")
-            metadata_layout.addWidget(date_label)
+            date_card = QLabel(f"📅 {conversation.created_at.strftime('%B %d, %Y at %I:%M %p')}")
+            date_card.setStyleSheet("""
+                QLabel {
+                    background-color: #FFF3E0;
+                    color: #E65100;
+                    padding: 8px 12px;
+                    border-radius: 6px;
+                    font-weight: bold;
+                    border: 1px solid #FF9800;
+                }
+            """)
+            metadata_layout.addWidget(date_card)
         
-        msg_label = QLabel(f"💬 Messages: {conversation.message_count}")
-        metadata_layout.addWidget(msg_label)
+        # Message count card
+        msg_card = QLabel(f"💬 {conversation.message_count} messages")
+        msg_card.setStyleSheet("""
+            QLabel {
+                background-color: #E3F2FD;
+                color: #0277BD;
+                padding: 8px 12px;
+                border-radius: 6px;
+                font-weight: bold;
+                border: 1px solid #2196F3;
+            }
+        """)
+        metadata_layout.addWidget(msg_card)
         
         metadata_layout.addStretch()
-        header_layout.addLayout(metadata_layout)
+        header_layout.addWidget(metadata_frame)
         
-        # Tags
+        # Tags section
         if conversation.tags:
-            tags_label = QLabel(f"🏷️ Tags: {', '.join(conversation.tags)}")
-            tags_label.setStyleSheet("color: #007bff;")
-            header_layout.addWidget(tags_label)
+            tags_frame = QFrame()
+            tags_frame.setStyleSheet("""
+                QFrame {
+                    background-color: #F3E5F5;
+                    border-radius: 8px;
+                    padding: 10px;
+                    margin: 5px 0px;
+                }
+            """)
+            tags_layout = QHBoxLayout(tags_frame)
+            tags_label = QLabel("🏷️ Tags:")
+            tags_label.setStyleSheet("font-weight: bold; color: #7B1FA2;")
+            tags_layout.addWidget(tags_label)
+            
+            for tag in conversation.tags:
+                tag_label = QLabel(tag)
+                tag_label.setStyleSheet("""
+                    QLabel {
+                        background-color: #9C27B0;
+                        color: white;
+                        padding: 4px 8px;
+                        border-radius: 12px;
+                        font-size: 12px;
+                        margin: 2px;
+                    }
+                """)
+                tags_layout.addWidget(tag_label)
+            
+            tags_layout.addStretch()
+            header_layout.addWidget(tags_frame)
         
         self.content_layout.addWidget(header_frame)
+        
+        # Conversation separator
+        separator = QFrame()
+        separator.setFrameShape(QFrame.Shape.HLine)
+        separator.setFrameShadow(QFrame.Shadow.Sunken)
+        separator.setStyleSheet("""
+            QFrame {
+                color: #0078D4;
+                background-color: #0078D4;
+                height: 3px;
+                margin: 20px 10px;
+            }
+        """)
+        self.content_layout.addWidget(separator)
+        
+        # Messages section with title
+        messages_title = QLabel("💬 Conversation Messages")
+        messages_title.setFont(QFont("Segoe UI", 16, QFont.Weight.Bold))
+        messages_title.setStyleSheet("""
+            QLabel {
+                color: #0078D4;
+                padding: 15px 10px 10px 10px;
+                margin: 10px;
+            }
+        """)
+        self.content_layout.addWidget(messages_title)
         
         # Messages
         if conversation.content:
             try:
                 messages = json.loads(conversation.content)
-                self.display_messages(messages)
+                self.display_enhanced_messages(messages, conversation.bot_name)
             except json.JSONDecodeError:
-                # Fallback for non-JSON content
+                # Fallback for non-JSON content with enhanced styling
+                fallback_frame = QFrame()
+                fallback_frame.setStyleSheet("""
+                    QFrame {
+                        background-color: #FFF8E1;
+                        border: 2px solid #FFB300;
+                        border-radius: 12px;
+                        padding: 20px;
+                        margin: 10px;
+                    }
+                """)
+                fallback_layout = QVBoxLayout(fallback_frame)
+                
+                warning_label = QLabel("⚠️ Raw Content (Non-structured)")
+                warning_label.setStyleSheet("""
+                    QLabel {
+                        color: #E65100;
+                        font-weight: bold;
+                        font-size: 14px;
+                        margin-bottom: 10px;
+                    }
+                """)
+                fallback_layout.addWidget(warning_label)
+                
                 text_widget = QTextEdit()
                 text_widget.setPlainText(conversation.content)
                 text_widget.setReadOnly(True)
-                self.content_layout.addWidget(text_widget)
+                text_widget.setStyleSheet("""
+                    QTextEdit {
+                        background-color: white;
+                        border: 1px solid #FFB300;
+                        border-radius: 8px;
+                        padding: 15px;
+                        font-family: 'Segoe UI', Arial, sans-serif;
+                        font-size: 12px;
+                        line-height: 1.6;
+                        color: #000000;
+                    }
+                """)
+                fallback_layout.addWidget(text_widget)
+                self.content_layout.addWidget(fallback_frame)
         else:
-            no_content_label = QLabel("No message content available")
+            # Enhanced no content message
+            no_content_frame = QFrame()
+            no_content_frame.setStyleSheet("""
+                QFrame {
+                    background-color: #FFEBEE;
+                    border: 2px dashed #E57373;
+                    border-radius: 12px;
+                    padding: 40px;
+                    margin: 20px;
+                }
+            """)
+            no_content_layout = QVBoxLayout(no_content_frame)
+            
+            no_content_icon = QLabel("📭")
+            no_content_icon.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            no_content_icon.setStyleSheet("font-size: 48px; margin-bottom: 10px;")
+            no_content_layout.addWidget(no_content_icon)
+            
+            no_content_label = QLabel("No conversation content available")
             no_content_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            no_content_label.setStyleSheet("color: #000000; padding: 20px;")
-            self.content_layout.addWidget(no_content_label)
+            no_content_label.setStyleSheet("""
+                QLabel {
+                    color: #C62828;
+                    font-size: 16px;
+                    font-weight: bold;
+                }
+            """)
+            no_content_layout.addWidget(no_content_label)
+            
+            self.content_layout.addWidget(no_content_frame)
         
         # Add stretch to push content to top
         self.content_layout.addStretch()
     
-    def display_messages(self, messages: List[dict]):
-        """Display individual messages."""
+    def display_enhanced_messages(self, messages: List[dict], bot_name: str = None):
+        """Display messages with enhanced styling and formatting."""
         for i, message in enumerate(messages):
-            message_frame = QFrame()
-            message_layout = QVBoxLayout(message_frame)
+            # Determine sender info
+            sender = message.get('sender', '').lower()
+            is_user = sender == 'user'
+            content = message.get('content', '').strip()
             
-            # Determine sender style
-            is_user = message.get('sender', '').lower() == 'user'
-            
-            if is_user:
-                message_frame.setStyleSheet("""
-                    QFrame {
-                        background-color: #e3f2fd;
-                        border: 1px solid #2196f3;
-                        border-radius: 10px;
-                        margin: 5px 50px 5px 5px;
-                        padding: 10px;
-                    }
-                """)
-                sender_text = "👤 You"
-            else:
-                message_frame.setStyleSheet("""
-                    QFrame {
-                        background-color: #f1f8e9;
-                        border: 1px solid #4caf50;
-                        border-radius: 10px;
-                        margin: 5px 5px 5px 50px;
-                        padding: 10px;
-                    }
-                """)
-                sender_text = "🤖 Bot"
-            
-            # Sender label
-            sender_label = QLabel(sender_text)
-            sender_label.setFont(QFont("Arial", 9, QFont.Weight.Bold))
-            message_layout.addWidget(sender_label)
-            
-            # Message content
-            content_text = QTextEdit()
-            content_text.setPlainText(message.get('content', ''))
-            content_text.setReadOnly(True)
-            content_text.setMaximumHeight(200)  # Limit height
-            content_text.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
-            
-            # Style the text area
-            content_text.setStyleSheet("""
-                QTextEdit {
-                    border: none;
-                    background-color: transparent;
-                    font-family: 'Segoe UI', Arial, sans-serif;
-                    font-size: 11px;
-                    line-height: 1.4;
-                    color: #000000;
+            if not content:
+                continue
+                
+            # Create message container
+            message_container = QFrame()
+            message_container.setStyleSheet("""
+                QFrame {
+                    background: transparent;
+                    margin: 5px 0px;
                 }
             """)
+            container_layout = QVBoxLayout(message_container)
+            container_layout.setContentsMargins(0, 0, 0, 0)
             
-            message_layout.addWidget(content_text)
-            self.content_layout.addWidget(message_frame)
+            # Create message bubble
+            bubble_frame = QFrame()
+            bubble_layout = QVBoxLayout(bubble_frame)
+            bubble_layout.setContentsMargins(15, 12, 15, 12)
+            bubble_layout.setSpacing(8)
+            
+            if is_user:
+                # User message styling
+                bubble_frame.setStyleSheet("""
+                    QFrame {
+                        background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                            stop:0 #E3F2FD, stop:1 #BBDEFB);
+                        border: 2px solid #2196F3;
+                        border-radius: 15px;
+                        margin: 8px 80px 8px 20px;
+                    }
+                """)
+                
+                # User header
+                user_header = QLabel("👤 You")
+                user_header.setStyleSheet("""
+                    QLabel {
+                        color: #1565C0;
+                        font-weight: bold;
+                        font-size: 13px;
+                        margin-bottom: 5px;
+                        background: transparent;
+                    }
+                """)
+                bubble_layout.addWidget(user_header)
+                
+            else:
+                # Bot message styling
+                bot_display_name = bot_name or "Assistant"
+                bubble_frame.setStyleSheet("""
+                    QFrame {
+                        background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                            stop:0 #F1F8E9, stop:1 #DCEDC8);
+                        border: 2px solid #4CAF50;
+                        border-radius: 15px;
+                        margin: 8px 20px 8px 80px;
+                    }
+                """)
+                
+                # Bot header
+                bot_header = QLabel(f"🤖 {bot_display_name}")
+                bot_header.setStyleSheet("""
+                    QLabel {
+                        color: #2E7D32;
+                        font-weight: bold;
+                        font-size: 13px;
+                        margin-bottom: 5px;
+                        background: transparent;
+                    }
+                """)
+                bubble_layout.addWidget(bot_header)
+            
+            # Format and display message content
+            formatted_content = self.format_message_content(content)
+            content_label = QLabel()
+            content_label.setText(formatted_content)
+            content_label.setWordWrap(True)
+            content_label.setTextFormat(Qt.TextFormat.RichText)
+            content_label.setOpenExternalLinks(True)
+            content_label.setStyleSheet("""
+                QLabel {
+                    color: #000000;
+                    font-family: 'Segoe UI', Arial, sans-serif;
+                    font-size: 13px;
+                    line-height: 1.6;
+                    background: transparent;
+                    padding: 0px;
+                    margin: 0px;
+                }
+            """)
+            bubble_layout.addWidget(content_label)
+            
+            # Message timestamp (if available)
+            timestamp = message.get('timestamp')
+            if timestamp:
+                time_label = QLabel(f"🕐 {timestamp}")
+                time_label.setStyleSheet("""
+                    QLabel {
+                        color: #666666;
+                        font-size: 11px;
+                        font-style: italic;
+                        margin-top: 5px;
+                        background: transparent;
+                    }
+                """)
+                time_label.setAlignment(Qt.AlignmentFlag.AlignRight if is_user else Qt.AlignmentFlag.AlignLeft)
+                bubble_layout.addWidget(time_label)
+            
+            container_layout.addWidget(bubble_frame)
+            self.content_layout.addWidget(message_container)
+            
+            # Add spacing between messages
+            if i < len(messages) - 1:
+                spacer = QFrame()
+                spacer.setFixedHeight(10)
+                spacer.setStyleSheet("background: transparent;")
+                self.content_layout.addWidget(spacer)
+    
+    def format_message_content(self, content: str) -> str:
+        """Format message content with better typography and structure."""
+        import re
+        
+        # Escape HTML first
+        content = content.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+        
+        # Convert line breaks to HTML
+        content = content.replace('\n\n', '</p><p>').replace('\n', '<br>')
+        
+        # Wrap in paragraphs
+        if content.strip():
+            content = f'<p>{content}</p>'
+        
+        # Format code blocks (```code```)
+        content = re.sub(
+            r'```(.*?)```',
+            r'<div style="background-color: #f5f5f5; border: 1px solid #ddd; border-radius: 4px; padding: 10px; margin: 8px 0; font-family: Consolas, monospace; font-size: 12px; color: #000;"><pre>\1</pre></div>',
+            content,
+            flags=re.DOTALL
+        )
+        
+        # Format inline code (`code`)
+        content = re.sub(
+            r'`([^`]+)`',
+            r'<code style="background-color: #f5f5f5; padding: 2px 4px; border-radius: 3px; font-family: Consolas, monospace; color: #d63384;">\1</code>',
+            content
+        )
+        
+        # Format bold text (**text**)
+        content = re.sub(r'\*\*([^*]+)\*\*', r'<strong>\1</strong>', content)
+        
+        # Format italic text (*text*)
+        content = re.sub(r'\*([^*]+)\*', r'<em>\1</em>', content)
+        
+        # Format URLs
+        url_pattern = r'https?://[^\s<>"\']*'
+        content = re.sub(
+            url_pattern,
+            r'<a href="\g<0>" style="color: #0078D4; text-decoration: none;">\g<0></a>',
+            content
+        )
+        
+        # Format numbered lists
+        lines = content.split('<br>')
+        formatted_lines = []
+        in_list = False
+        
+        for line in lines:
+            line = line.strip()
+            if re.match(r'^\d+\.\s', line):
+                if not in_list:
+                    formatted_lines.append('<ol style="margin: 8px 0; padding-left: 20px;">')
+                    in_list = True
+                item_text = re.sub(r'^\d+\.\s', '', line)
+                formatted_lines.append(f'<li style="margin: 4px 0; color: #000;">{item_text}</li>')
+            else:
+                if in_list:
+                    formatted_lines.append('</ol>')
+                    in_list = False
+                if line:
+                    formatted_lines.append(line)
+        
+        if in_list:
+            formatted_lines.append('</ol>')
+        
+        content = '<br>'.join(formatted_lines)
+        
+        # Format bullet lists
+        content = re.sub(
+            r'<br>[-•*]\s([^<]+)',
+            r'<br><ul style="margin: 4px 0; padding-left: 20px;"><li style="margin: 2px 0; color: #000;">\1</li></ul>',
+            content
+        )
+        
+        # Clean up extra spacing
+        content = re.sub(r'<p>\s*</p>', '', content)
+        content = re.sub(r'<br>\s*<br>', '<br>', content)
+        
+        return content
 
 
 class SearchWidget(QWidget):
