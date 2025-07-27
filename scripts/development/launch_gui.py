@@ -73,10 +73,16 @@ def main():
     sys.path.append(os.path.join(PROJECT_ROOT, 'src'))
 
     try:
-        from gui.main_window import run_gui
-        
-        print("🚀 Starting Poe.com Conversation Manager GUI...")
-        sys.exit(run_gui())
+        # Try modern GUI first, fallback to original
+        try:
+            from gui.modern_main_window import run_modern_gui
+            print("🚀 Starting Modern Poe.com Conversation Manager GUI...")
+            sys.exit(run_modern_gui())
+        except ImportError:
+            print("� Modern GUI not available, using standard GUI...")
+            from gui.main_window import run_gui
+            print("�🚀 Starting Poe.com Conversation Manager GUI...")
+            sys.exit(run_gui())
         
     except ImportError as e:
         print(f"❌ Failed to import GUI components: {e}")
