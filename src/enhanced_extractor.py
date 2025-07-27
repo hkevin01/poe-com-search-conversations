@@ -264,7 +264,7 @@ def main():
     parser = argparse.ArgumentParser(description="Enhanced Poe Conversation Extractor")
     parser.add_argument(
         "--config", "-c",
-        default=os.path.expanduser("~/Projects/poe-search/config/poe_tokens.json"),
+        default="/home/kevin/Projects/poe-com-search-conversations/config/poe_tokens.json",
         help="Path to your poe_tokens.json"
     )
     parser.add_argument(

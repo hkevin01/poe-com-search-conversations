@@ -1,16 +1,35 @@
 #!/usr/bin/env python3
 """
-Quick Poe.com Conversation Lister - Simplified (no formkey required)
+Quick Poe.com Conversation Lister - Phase 1 Foundation
+Extracts conversation titles and URLs from Poe.com using Selenium automation.
 """
 
 import time
-import json
+import json  
 import os
+import sys
 import argparse
 from datetime import datetime
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options as ChromeOptions
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+
+# Add src directory to path for config import
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
+try:
+    from config import get_config_path, get_project_root
+    DEFAULT_CONFIG_PATH = get_config_path()
+    PROJECT_ROOT = get_project_root()
+except ImportError:
+    # Fallback if config module not available
+    DEFAULT_CONFIG_PATH = os.path.join(
+        os.path.dirname(os.path.dirname(__file__)), 
+        "config", "poe_tokens.json"
+    )
+    PROJECT_ROOT = os.path.dirname(os.path.dirname(__file__))
 
 def setup_browser(headless=True):
     opts = ChromeOptions()
@@ -75,7 +94,9 @@ def scroll_to_bottom(driver, pause=1.0):
     """Ensure lazy-loaded chats are all loaded."""
     last_h = driver.execute_script("return document.body.scrollHeight")
     while True:
-        driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+        driver.execute_script(
+            "window.scrollTo(0, document.body.scrollHeight);"
+        )
         time.sleep(pause)
         new_h = driver.execute_script("return document.body.scrollHeight")
         if new_h == last_h:
@@ -107,7 +128,7 @@ def extract_conversations(driver):
             continue
         try:
             href = tile.find_element(By.TAG_NAME, "a").get_attribute("href")
-        except:
+        except (AttributeError, Exception):
             href = None
         convs.append({
             "id":     len(convs) + 1,
@@ -127,24 +148,33 @@ def extract_conversations(driver):
     return unique
 
 def print_and_save(convs):
+    """Print conversations and save to JSON file."""
     if not convs:
         print("❌ No conversations found.")
         return
+    
     print(f"\n✅ Found {len(convs)} conversations:\n" + "="*60)
     for c in convs:
         print(f"{c['id']:3d}. {c['title']}")
         print(f"     URL: {c['url']}   (via {c['method']})")
+    
+    # Save to timestamped file in project root
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    fname = f"conversations_{stamp}.json"
+    output_dir = os.path.join(PROJECT_ROOT, "exports")
+    os.makedirs(output_dir, exist_ok=True)
+    fname = os.path.join(output_dir, f"conversations_{stamp}.json")
+    
     with open(fname, 'w', encoding='utf-8') as f:
         json.dump(convs, f, indent=2, ensure_ascii=False)
     print(f"\n💾 Saved to {fname}")
+    return fname
 
 def main():
+    """Main function to run the conversation lister."""
     p = argparse.ArgumentParser(description="Quick Poe Conversation Lister")
     p.add_argument(
         "--config", "-c",
-        default=os.path.expanduser("~/Projects/poe-search/config/poe_tokens.json"),
+        default=DEFAULT_CONFIG_PATH,
         help="Path to your poe_tokens.json"
     )
     p.add_argument(
@@ -153,20 +183,44 @@ def main():
     )
     args = p.parse_args()
 
-    print("🚀 Poe Conversation Lister")
-    tokens = load_tokens(args.config)
-    print(f"🔑 p-b token: {tokens['p-b'][:16]}…")
-    driver = setup_browser(headless=not args.no_headless)
-
+    print("🚀 Poe Conversation Lister - Phase 1 Foundation")
+    print(f"📁 Project root: {PROJECT_ROOT}")
+    print(f"🔑 Config path: {args.config}")
+    
     try:
+        tokens = load_tokens(args.config)
+        print(f"🔑 p-b token: {tokens['p-b'][:16]}…")
+        
+        driver = setup_browser(headless=not args.no_headless)
+        print("🌐 Browser initialized")
+
         set_cookies(driver, tokens)
+        print("🍪 Authentication cookies set")
+        
         convs = extract_conversations(driver)
         print_and_save(convs)
+        
+    except FileNotFoundError as e:
+        print(f"❌ Config file error: {e}")
+        print(f"💡 Create config file: cp config/poe_tokens.json.example config/poe_tokens.json")
+        print(f"   Then edit config/poe_tokens.json with your Poe.com tokens")
+        return 1
+    except KeyError as e:
+        print(f"❌ Missing token: {e}")
+        print(f"💡 Ensure 'p-b' token is present in {args.config}")
+        return 1
     except Exception as e:
-        print("❌ Error:", e)
-        raise
+        print(f"❌ Error: {e}")
+        import traceback
+        traceback.print_exc()
+        return 1
     finally:
-        driver.quit()
+        if 'driver' in locals():
+            driver.quit()
+            print("🔒 Browser closed")
+    
+    return 0
+
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
