@@ -64,18 +64,80 @@ A Python tool for listing and searching conversations from Poe.com using Seleniu
    ./activate.sh
    ```
 
-## Usage
+## Quick Start
 
-### GUI Application (Recommended)
+### 1. First-Time Setup
 ```bash
-# Install dependencies
-pip install -r requirements.txt
+# Clone the repository
+git clone <repository-url>
+cd poe-com-search-conversations
 
-# Launch GUI application
-python run_gui.py
+# Run automated setup
+python main.py setup
 ```
 
-### Basic usage:
+### 2. Configure Authentication
+```bash
+# Copy the example config file
+cp config/poe_tokens.json.example config/poe_tokens.json
+
+# Edit with your actual tokens (see config/README.md for details)
+nano config/poe_tokens.json
+```
+
+### 3. Launch the Application
+```bash
+# Recommended: Launch with automatic data population
+python main.py launch
+
+# Or launch GUI directly (may be empty initially)  
+python main.py gui
+
+# Run system health check
+python main.py test
+```
+
+## Usage
+
+### Main Commands
+```bash
+# Environment setup
+python main.py setup              # First-time setup and dependencies
+
+# Application launch  
+python main.py launch             # Launch GUI with auto data population
+python main.py gui                # Launch GUI directly
+
+# Testing and diagnostics
+python main.py test               # System health check
+python main.py test-unique        # Database uniqueness tests
+```
+
+### Advanced Options
+```bash
+# Launch with more conversations
+python main.py launch --limit 25
+
+# Launch without populating database
+python main.py launch --skip-populate
+
+# Force database refresh
+python main.py launch --force-populate
+```
+
+### Manual Script Execution
+```bash
+# Setup scripts
+python scripts/setup/create_environment.py
+
+# Development scripts
+python scripts/development/launch_gui.py
+python scripts/development/launch_with_data.py
+
+# Testing scripts
+python scripts/testing/test_system.py
+python scripts/testing/test_uniqueness.py
+```
 ```bash
 python src/quick_list_conversations.py
 ```

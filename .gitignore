@@ -218,3 +218,65 @@ dmypy.json
 MANIFEST
 *.egg
 *.egg-info/
+
+# SQLite Database Storage - Keep structure, ignore databases
+storage/*.db
+storage/*.sqlite
+storage/*.sqlite3
+storage/backups/
+storage/exports/
+storage/logs/
+
+# But keep the README
+!storage/README.md
+
+# Project-specific logs
+poe_extractor.log
+selenium-debug.log
+
+# Browser automation files
+chromedriver.exe
+geckodriver.exe
+
+# Project exports directory
+exports/
+
+# Test files and temporary data
+test_*.json
+demo_*.json
+sample_*.json
+
+# Development and debugging
+debug_*.py
+scratch_*.py
+temp_*.py
+
+# Project-specific temporary files
+quick_conversations_*.json
+conversation_export_*.json
+
+# Environment-specific configs
+.env.local
+.env.development
+.env.production
+
+# Backup directories
+backups/
+old/
+archive/
+
+# Documentation builds
+docs/build/
+docs/_build/
+
+# Project cache
+.project_cache/
+cache/
+
+# Runtime directories
+runtime/
+run/
+
+# Lock files
+poetry.lock
+Pipfile.lock

@@ -348,105 +348,126 @@ class ConversationDatabase:
             self.logger.error(f"Failed to update tags for {poe_id}: {e}")
             return False
     
-    def get_conversation_by_poe_id(self, poe_id: str) -> Optional[Conversation]:
-        """Get a conversation by poe_id."""
-        with sqlite3.connect(self.db_path) as conn:
-            conn.row_factory = sqlite3.Row
-            cursor = conn.execute(
-                "SELECT * FROM conversations WHERE poe_id = ?", (poe_id,)
-            )
-            row = cursor.fetchone()
-            
-            if not row:
-                return None
-            
-            return Conversation(
-                id=row['id'],
-                poe_id=row['poe_id'],
-                title=row['title'],
-                url=row['url'],
-                bot_name=row['bot_name'],
-                created_at=datetime.fromisoformat(row['created_at']) if row['created_at'] else None,
-                updated_at=datetime.fromisoformat(row['updated_at']) if row['updated_at'] else None,
-                message_count=row['message_count'],
-                tags=json.loads(row['tags']) if row['tags'] else [],
-                content=row['content'] or "",
-                metadata=json.loads(row['metadata']) if row['metadata'] else {}
-            )
-    
     def conversation_exists(self, poe_id: str) -> bool:
-        """Check if a conversation exists in the database."""
-        with sqlite3.connect(self.db_path) as conn:
-            cursor = conn.execute(
-                "SELECT 1 FROM conversations WHERE poe_id = ? LIMIT 1", (poe_id,)
-            )
-            return cursor.fetchone() is not None
-    
-    def get_duplicate_conversations(self) -> List[Dict[str, Any]]:
-        """Find potential duplicate conversations based on title similarity."""
-        with sqlite3.connect(self.db_path) as conn:
-            cursor = conn.execute("""
-                SELECT title, COUNT(*) as count, GROUP_CONCAT(poe_id) as ids
-                FROM conversations 
-                GROUP BY LOWER(TRIM(title))
-                HAVING count > 1
-                ORDER BY count DESC
-            """)
-            
-            duplicates = []
-            for row in cursor.fetchall():
-                duplicates.append({
-                    "title": row[0],
-                    "count": row[1],
-                    "poe_ids": row[2].split(',')
-                })
-            
-            return duplicates
-    
-    def optimize_database(self) -> bool:
-        """Optimize database performance by running VACUUM and ANALYZE."""
+        """Check if a conversation with the given poe_id already exists."""
         try:
             with sqlite3.connect(self.db_path) as conn:
-                conn.execute("VACUUM")
-                conn.execute("ANALYZE")
-                conn.commit()
-                
-            self.logger.info("Database optimization completed")
-            return True
+                cursor = conn.execute("SELECT 1 FROM conversations WHERE poe_id = ?", (poe_id,))
+                return cursor.fetchone() is not None
         except Exception as e:
-            self.logger.error(f"Database optimization failed: {e}")
+            self.logger.error(f"Error checking conversation existence: {e}")
             return False
-    
-    def get_search_suggestions(self, partial_query: str, limit: int = 10) -> List[str]:
-        """Get search suggestions based on partial query."""
-        suggestions = []
+
+    def get_conversation_by_poe_id(self, poe_id: str) -> Optional[Conversation]:
+        """Get a conversation by its Poe.com ID."""
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                conn.row_factory = sqlite3.Row
+                cursor = conn.execute("""
+                    SELECT id, poe_id, title, url, bot_name, created_at, updated_at,
+                           message_count, content, tags, metadata
+                    FROM conversations 
+                    WHERE poe_id = ?
+                """, (poe_id,))
+                
+                row = cursor.fetchone()
+                if row:
+                    return Conversation(
+                        id=row['id'],
+                        poe_id=row['poe_id'],
+                        title=row['title'],
+                        url=row['url'],
+                        bot_name=row['bot_name'],
+                        created_at=datetime.fromisoformat(row['created_at']) if row['created_at'] else None,
+                        updated_at=datetime.fromisoformat(row['updated_at']) if row['updated_at'] else None,
+                        message_count=row['message_count'],
+                        tags=json.loads(row['tags']) if row['tags'] else [],
+                        content=row['content'] or "",
+                        metadata=json.loads(row['metadata']) if row['metadata'] else {}
+                    )
+                return None
+                
+        except Exception as e:
+            self.logger.error(f"Error getting conversation by poe_id: {e}")
+            return None
+
+    def update_conversation_if_newer(self, conversation: Conversation) -> int:
+        """Update conversation if the new version has more content or is newer."""
+        try:
+            existing = self.get_conversation_by_poe_id(conversation.poe_id)
+            
+            if not existing:
+                # Doesn't exist, add it
+                return self.add_conversation(conversation)
+            
+            # Check if new version has more messages or newer content
+            should_update = (
+                conversation.message_count > existing.message_count or
+                (conversation.updated_at and existing.updated_at and 
+                 conversation.updated_at > existing.updated_at) or
+                len(conversation.content) > len(existing.content)
+            )
+            
+            if should_update:
+                with sqlite3.connect(self.db_path) as conn:
+                    cursor = conn.execute("""
+                        UPDATE conversations 
+                        SET title = ?, url = ?, bot_name = ?, updated_at = ?,
+                            message_count = ?, content = ?, tags = ?, metadata = ?
+                        WHERE poe_id = ?
+                    """, (
+                        conversation.title,
+                        conversation.url, 
+                        conversation.bot_name,
+                        conversation.updated_at,
+                        conversation.message_count,
+                        conversation.content,
+                        json.dumps(conversation.tags),
+                        json.dumps(conversation.metadata),
+                        conversation.poe_id
+                    ))
+                    conn.commit()
+                    self.logger.info(f"Updated conversation: {conversation.poe_id}")
+                    return existing.id
+            else:
+                self.logger.info(f"Conversation unchanged: {conversation.poe_id}")
+                return existing.id
+                
+        except Exception as e:
+            self.logger.error(f"Error updating conversation: {e}")
+            raise
+
+    def export_conversation_by_id(self, poe_id: str, format: str = "json") -> Optional[str]:
+        """Export a single conversation by ID."""
+        conv = self.get_conversation_by_poe_id(poe_id)
+        if not conv:
+            return None
         
-        with sqlite3.connect(self.db_path) as conn:
-            # Get title suggestions
-            cursor = conn.execute("""
-                SELECT DISTINCT title 
-                FROM conversations 
-                WHERE title LIKE ? 
-                ORDER BY title 
-                LIMIT ?
-            """, (f"%{partial_query}%", limit // 2))
-            
-            titles = [row[0] for row in cursor.fetchall()]
-            suggestions.extend(titles)
-            
-            # Get bot name suggestions
-            cursor = conn.execute("""
-                SELECT DISTINCT bot_name 
-                FROM conversations 
-                WHERE bot_name LIKE ? AND bot_name IS NOT NULL
-                ORDER BY bot_name 
-                LIMIT ?
-            """, (f"%{partial_query}%", limit - len(suggestions)))
-            
-            bots = [row[0] for row in cursor.fetchall()]
-            suggestions.extend(bots)
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        safe_title = "".join(c for c in conv.title[:50] if c.isalnum() or c in (' ', '-', '_'))
+        filename = f"conversation_{safe_title}_{timestamp}.{format}"
         
-        return suggestions[:limit]
+        if format == "json":
+            with open(filename, 'w', encoding='utf-8') as f:
+                json.dump(asdict(conv), f, indent=2, ensure_ascii=False, default=str)
+        elif format == "markdown":
+            with open(filename, 'w', encoding='utf-8') as f:
+                f.write(f"# {conv.title}\n\n")
+                f.write(f"- **Bot**: {conv.bot_name}\n")
+                f.write(f"- **URL**: {conv.url}\n")
+                f.write(f"- **Created**: {conv.created_at}\n")
+                f.write(f"- **Messages**: {conv.message_count}\n\n")
+                
+                if conv.content:
+                    try:
+                        messages = json.loads(conv.content)
+                        for msg in messages:
+                            sender = "**User**" if msg['sender'] == 'user' else "**Bot**"
+                            f.write(f"{sender}: {msg['content']}\n\n")
+                    except json.JSONDecodeError:
+                        f.write(f"{conv.content}\n\n")
+        
+        return filename
     
     def close(self):
         """Close database connection (if needed for cleanup)."""
@@ -673,35 +694,3 @@ class ConversationDatabase:
                 "indexes": indexes,
                 "sqlite_version": sqlite3.sqlite_version
             }
-    
-    def export_conversation_by_id(self, poe_id: str, format: str = "json") -> Optional[str]:
-        """Export a single conversation by ID."""
-        conv = self.get_conversation_by_poe_id(poe_id)
-        if not conv:
-            return None
-        
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        safe_title = "".join(c for c in conv.title[:50] if c.isalnum() or c in (' ', '-', '_'))
-        filename = f"conversation_{safe_title}_{timestamp}.{format}"
-        
-        if format == "json":
-            with open(filename, 'w', encoding='utf-8') as f:
-                json.dump(asdict(conv), f, indent=2, ensure_ascii=False, default=str)
-        elif format == "markdown":
-            with open(filename, 'w', encoding='utf-8') as f:
-                f.write(f"# {conv.title}\n\n")
-                f.write(f"- **Bot**: {conv.bot_name}\n")
-                f.write(f"- **URL**: {conv.url}\n")
-                f.write(f"- **Created**: {conv.created_at}\n")
-                f.write(f"- **Messages**: {conv.message_count}\n\n")
-                
-                if conv.content:
-                    try:
-                        messages = json.loads(conv.content)
-                        for msg in messages:
-                            sender = "**User**" if msg['sender'] == 'user' else "**Bot**"
-                            f.write(f"{sender}: {msg['content']}\n\n")
-                    except json.JSONDecodeError:
-                        f.write(f"{conv.content}\n\n")
-        
-        return filename

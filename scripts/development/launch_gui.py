@@ -1,13 +1,16 @@
 #!/usr/bin/env python3
 """
-Quick GUI Launcher - Simple script to launch the GUI application
-Automatically activates virtual environment if not already active
+GUI Launcher - Moved from run_gui.py in root
+Simple script to launch the GUI application with automatic venv detection
 """
 
 import sys
 import os
 import subprocess
 import platform
+
+# Get project root (three levels up from this script)
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 def check_venv():
     """Check if we're in a virtual environment."""
@@ -17,28 +20,19 @@ def check_venv():
 
 def activate_venv_and_rerun():
     """Activate virtual environment and rerun this script."""
-    project_root = os.path.dirname(os.path.abspath(__file__))
-    
     # Determine the correct activation script and python executable
     if platform.system() == "Windows":
-        activate_script = os.path.join(project_root, "venv", "Scripts", "activate.bat")
-        python_exe = os.path.join(project_root, "venv", "Scripts", "python.exe")
-        venv_check = os.path.join(project_root, "venv", "Scripts")
+        python_exe = os.path.join(PROJECT_ROOT, "venv", "Scripts", "python.exe")
+        venv_check = os.path.join(PROJECT_ROOT, "venv", "Scripts")
     else:
-        activate_script = os.path.join(project_root, "venv", "bin", "activate")
-        python_exe = os.path.join(project_root, "venv", "bin", "python")
-        venv_check = os.path.join(project_root, "venv", "bin")
+        python_exe = os.path.join(PROJECT_ROOT, "venv", "bin", "python")
+        venv_check = os.path.join(PROJECT_ROOT, "venv", "bin")
     
     # Check if virtual environment exists
     if not os.path.exists(venv_check):
         print("❌ Virtual environment not found!")
         print("\n💡 Please run the setup script first:")
-        if platform.system() == "Windows":
-            print("   setup.bat")
-        else:
-            print("   ./setup.sh")
-        print("   # or")
-        print("   python setup.py")
+        print("   python scripts/setup/create_environment.py")
         sys.exit(1)
     
     # Check if python executable exists in venv
@@ -49,13 +43,13 @@ def activate_venv_and_rerun():
     
     print("🔧 Activating virtual environment and launching GUI...")
     
-    # Re-run this script with the virtual environment's Python
+    # Re-run the actual GUI launcher with the virtual environment's Python
     try:
-        # Use the venv's python to run this script again
-        result = subprocess.run([python_exe, __file__], check=True)
+        gui_script = os.path.join(PROJECT_ROOT, "src", "gui", "main_window.py")
+        result = subprocess.run([python_exe, gui_script], check=True)
         sys.exit(result.returncode)
     except subprocess.CalledProcessError as e:
-        print(f"❌ Failed to run with virtual environment: {e}")
+        print(f"❌ Failed to run GUI: {e}")
         sys.exit(1)
     except FileNotFoundError:
         print(f"❌ Python executable not found: {python_exe}")
@@ -64,6 +58,9 @@ def activate_venv_and_rerun():
 
 def main():
     """Main function to launch the GUI."""
+    # Change to project root
+    os.chdir(PROJECT_ROOT)
+    
     # Check if we're in a virtual environment
     if not check_venv():
         print("⚠️  Not running in virtual environment, switching...")
@@ -73,7 +70,7 @@ def main():
     print("✅ Running in virtual environment")
     
     # Add src directory to path
-    sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
+    sys.path.append(os.path.join(PROJECT_ROOT, 'src'))
 
     try:
         from gui.main_window import run_gui
@@ -84,11 +81,8 @@ def main():
     except ImportError as e:
         print(f"❌ Failed to import GUI components: {e}")
         print("\n💡 This usually means PyQt6 is not installed in the virtual environment.")
-        print("Please run the setup script again:")
-        if platform.system() == "Windows":
-            print("   setup.bat")
-        else:
-            print("   ./setup.sh")
+        print("Please run the setup script:")
+        print("   python scripts/setup/create_environment.py")
         print("\nOr manually install requirements:")
         print("   pip install -r requirements.txt")
         sys.exit(1)

@@ -466,10 +466,17 @@ class MainWindow(QMainWindow):
     def init_database(self):
         """Initialize database connection."""
         try:
-            self.db = ConversationDatabase("conversations.db")
-            self.status_bar.showMessage("Database connected")
+            # Use correct storage directory path (go up from src to project root)
+            project_root = os.path.dirname(os.path.dirname(__file__))
+            db_path = os.path.join(project_root, "storage", "conversations.db")
+            os.makedirs(os.path.dirname(db_path), exist_ok=True)
+            
+            self.db = ConversationDatabase(db_path)
+            self.status_bar.showMessage(f"Database connected: {db_path}")
+            print(f"🗄️  Database initialized: {db_path}")
         except Exception as e:
-            QMessageBox.critical(self, "Database Error", f"Failed to connect to database: {e}")
+            QMessageBox.critical(self, "Database Error", 
+                               f"Failed to connect to database: {e}")
             self.status_bar.showMessage("Database error")
     
     def load_initial_data(self):
