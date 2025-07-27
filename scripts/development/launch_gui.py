@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """
 GUI Launcher - Moved from run_gui.py in root
-Simple script to launch the GUI application with automatic venv detection
+Sim        from gui.main_window import run_gui
+        print("🚀 Starting Poe.com Conversation Manager GUI...")
+        sys.exit(run_gui()) to launch the GUI application with automatic venv detection
 """
 
 import sys

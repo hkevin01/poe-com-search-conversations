@@ -14,10 +14,10 @@ from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QSplitter, QListWidget, QListWidgetItem, QTextEdit, QLineEdit,
     QPushButton, QLabel, QComboBox, QStatusBar, QMenuBar, QMenu,
-    QMessageBox, QProgressBar, QFrame, QScrollArea, QGroupBox
+    QMessageBox, QProgressBar, QFrame, QScrollArea, QGroupBox, QFileDialog
 )
-from PyQt6.QtCore import Qt, QThread, pyqtSignal, QTimer
-from PyQt6.QtGui import QFont, QIcon, QAction, QPalette, QColor
+from PyQt6.QtCore import Qt, QThread, pyqtSignal, QTimer, QSettings, QPropertyAnimation, QEasingCurve
+from PyQt6.QtGui import QFont, QIcon, QAction, QPalette, QColor, QGuiApplication
 
 # Add parent directory to path for imports
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
@@ -42,23 +42,26 @@ class ConversationListWidget(QListWidget):
         # Set up styling
         self.setStyleSheet("""
             QListWidget {
-                background-color: #f8f9fa;
+                background-color: white;
                 border: 1px solid #dee2e6;
                 border-radius: 5px;
                 padding: 5px;
+                color: #000000;
             }
             QListWidget::item {
                 padding: 8px;
                 border-bottom: 1px solid #e9ecef;
                 margin: 2px;
                 border-radius: 3px;
+                color: #000000;
             }
             QListWidget::item:selected {
                 background-color: #007bff;
-                color: white;
+                color: #000000;
             }
             QListWidget::item:hover {
                 background-color: #e3f2fd;
+                color: #000000;
             }
         """)
     
@@ -117,7 +120,7 @@ class ConversationViewer(QScrollArea):
         empty_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         empty_label.setStyleSheet("""
             QLabel {
-                color: #6c757d;
+                color: #000000;
                 font-size: 16px;
                 padding: 50px;
             }
@@ -141,7 +144,7 @@ class ConversationViewer(QScrollArea):
         header_frame.setFrameStyle(QFrame.Shape.Box)
         header_frame.setStyleSheet("""
             QFrame {
-                background-color: #f8f9fa;
+                background-color: white;
                 border: 1px solid #dee2e6;
                 border-radius: 5px;
                 padding: 10px;
@@ -196,7 +199,7 @@ class ConversationViewer(QScrollArea):
         else:
             no_content_label = QLabel("No message content available")
             no_content_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            no_content_label.setStyleSheet("color: #6c757d; padding: 20px;")
+            no_content_label.setStyleSheet("color: #000000; padding: 20px;")
             self.content_layout.addWidget(no_content_label)
         
         # Add stretch to push content to top
@@ -254,6 +257,7 @@ class ConversationViewer(QScrollArea):
                     font-family: 'Segoe UI', Arial, sans-serif;
                     font-size: 11px;
                     line-height: 1.4;
+                    color: #000000;
                 }
             """)
             
@@ -434,13 +438,17 @@ class MainWindow(QMainWindow):
         self.setStyleSheet("""
             QMainWindow {
                 background-color: #ffffff;
+                color: #000000;
             }
             QLabel {
-                color: #212529;
+                color: #000000;
+            }
+            QWidget {
+                color: #000000;
             }
             QPushButton {
                 background-color: #007bff;
-                color: white;
+                color: #000000;
                 border: none;
                 padding: 8px 16px;
                 border-radius: 4px;
@@ -448,40 +456,44 @@ class MainWindow(QMainWindow):
             }
             QPushButton:hover {
                 background-color: #0056b3;
+                color: #000000;
             }
             QPushButton:pressed {
                 background-color: #004085;
+                color: #000000;
+            }
+            QPushButton:disabled {
+                background-color: #6c757d;
+                color: #000000;
             }
             QLineEdit, QComboBox {
                 padding: 8px;
                 border: 1px solid #ced4da;
                 border-radius: 4px;
                 background-color: white;
+                color: #000000;
             }
             QLineEdit:focus, QComboBox:focus {
                 border-color: #007bff;
                 outline: none;
+                color: #000000;
             }
         """)
     
     def setup_style(self):
-        """Setup Windows 11 style theme."""
-        # Windows 11 color palette
+        """Setup clean light theme."""
+        # Clean light color palette
         self.colors = {
-            'bg_primary': '#F3F3F3',      # Light gray background
-            'bg_secondary': '#FAFAFA',     # Lighter gray for cards
-            'bg_accent': '#0078D4',        # Windows 11 blue
-            'bg_accent_hover': '#106EBE',  # Darker blue for hover
+            'bg_primary': '#FFFFFF',      # Pure white background
+            'bg_secondary': '#FFFFFF',    # White for cards
+            'bg_accent': '#0078D4',       # Windows 11 blue
+            'bg_accent_hover': '#106EBE', # Darker blue for hover
             'bg_accent_pressed': '#005A9E', # Even darker for pressed
-            'text_primary': '#323130',     # Dark gray text
-            'text_secondary': '#605E5C',   # Medium gray text
-            'text_tertiary': '#8A8886',    # Light gray text
-            'text_white': '#FFFFFF',       # White text
-            'border': '#E1DFDD',           # Light border
-            'border_focus': '#0078D4',     # Blue border for focus
-            'success': '#107C10',          # Green
-            'warning': '#FF8C00',          # Orange
-            'error': '#D13438',            # Red
+            'border': '#E1DFDD',          # Light border
+            'border_focus': '#0078D4',    # Blue border for focus
+            'success': '#107C10',         # Green
+            'warning': '#FF8C00',         # Orange
+            'error': '#D13438',           # Red
         }
         
         # Windows 11 style sheet
@@ -489,7 +501,7 @@ class MainWindow(QMainWindow):
         /* Main Window */
         QMainWindow {{
             background-color: {self.colors['bg_primary']};
-            color: {self.colors['text_primary']};
+            color: #000000;
             font-family: 'Segoe UI', system-ui, sans-serif;
             font-size: 14px;
         }}
@@ -498,6 +510,12 @@ class MainWindow(QMainWindow):
         QWidget#centralWidget {{
             background-color: {self.colors['bg_primary']};
             border: none;
+            color: #000000;
+        }}
+        
+        /* All Widgets Default */
+        QWidget {{
+            color: #000000;
         }}
         
         /* Search Section */
@@ -516,22 +534,24 @@ class MainWindow(QMainWindow):
             border-radius: 6px;
             padding: 8px 12px;
             font-size: 14px;
-            color: {self.colors['text_primary']};
+            color: #000000;
         }}
         
         QLineEdit:focus {{
             border-color: {self.colors['border_focus']};
             outline: none;
+            color: #000000;
         }}
         
         QLineEdit:hover {{
-            border-color: {self.colors['text_secondary']};
+            border-color: #999999;
+            color: #000000;
         }}
         
         /* Buttons */
         QPushButton {{
             background-color: {self.colors['bg_accent']};
-            color: {self.colors['text_white']};
+            color: white;
             border: none;
             border-radius: 6px;
             padding: 8px 16px;
@@ -542,27 +562,30 @@ class MainWindow(QMainWindow):
         
         QPushButton:hover {{
             background-color: {self.colors['bg_accent_hover']};
+            color: white;
         }}
         
         QPushButton:pressed {{
             background-color: {self.colors['bg_accent_pressed']};
+            color: white;
         }}
         
         QPushButton:disabled {{
-            background-color: {self.colors['text_tertiary']};
-            color: {self.colors['bg_primary']};
+            background-color: #CCCCCC;
+            color: #666666;
         }}
         
         /* Secondary Button */
         QPushButton#secondaryButton {{
             background-color: white;
-            color: {self.colors['text_primary']};
+            color: #000000;
             border: 2px solid {self.colors['border']};
         }}
         
         QPushButton#secondaryButton:hover {{
             background-color: {self.colors['bg_primary']};
-            border-color: {self.colors['text_secondary']};
+            border-color: #999999;
+            color: #000000;
         }}
         
         /* List Widgets */
@@ -572,6 +595,7 @@ class MainWindow(QMainWindow):
             border-radius: 8px;
             padding: 4px;
             outline: none;
+            color: #000000;
         }}
         
         QListWidget::item {{
@@ -580,16 +604,17 @@ class MainWindow(QMainWindow):
             border-radius: 6px;
             padding: 12px;
             margin: 2px;
-            color: {self.colors['text_primary']};
+            color: #000000;
         }}
         
         QListWidget::item:selected {{
             background-color: {self.colors['bg_accent']};
-            color: {self.colors['text_white']};
+            color: #000000;
         }}
         
         QListWidget::item:hover {{
             background-color: {self.colors['bg_primary']};
+            color: #000000;
         }}
         
         /* Text Areas */
@@ -601,11 +626,12 @@ class MainWindow(QMainWindow):
             font-family: 'Segoe UI', system-ui, sans-serif;
             font-size: 14px;
             line-height: 1.5;
-            color: {self.colors['text_primary']};
+            color: #000000;
         }}
         
         QTextEdit:focus {{
             border-color: {self.colors['border_focus']};
+            color: #000000;
         }}
         
         /* Splitter */
@@ -625,14 +651,14 @@ class MainWindow(QMainWindow):
         QStatusBar {{
             background-color: {self.colors['bg_secondary']};
             border-top: 1px solid {self.colors['border']};
-            color: {self.colors['text_secondary']};
+            color: #333333;
             padding: 4px 8px;
         }}
         
         /* Menu Bar */
         QMenuBar {{
             background-color: {self.colors['bg_primary']};
-            color: {self.colors['text_primary']};
+            color: #000000;
             border-bottom: 1px solid {self.colors['border']};
             padding: 4px 8px;
         }}
@@ -641,11 +667,12 @@ class MainWindow(QMainWindow):
             background-color: transparent;
             padding: 6px 12px;
             border-radius: 4px;
+            color: #000000;
         }}
         
         QMenuBar::item:selected {{
             background-color: {self.colors['bg_accent']};
-            color: {self.colors['text_white']};
+            color: #000000;
         }}
         
         /* Menus */
@@ -654,17 +681,30 @@ class MainWindow(QMainWindow):
             border: 1px solid {self.colors['border']};
             border-radius: 8px;
             padding: 4px;
-            color: {self.colors['text_primary']};
+            color: #000000;
         }}
         
         QMenu::item {{
             padding: 8px 16px;
             border-radius: 4px;
+            color: #000000;
+            background-color: white;
         }}
         
         QMenu::item:selected {{
             background-color: {self.colors['bg_accent']};
-            color: {self.colors['text_white']};
+            color: #000000;
+        }}
+        
+        QMenu::item:hover {{
+            background-color: #e3f2fd;
+            color: #000000;
+        }}
+        
+        QMenu::separator {{
+            height: 1px;
+            background-color: {self.colors['border']};
+            margin: 4px 8px;
         }}
         
         /* Scroll Bars */
@@ -675,13 +715,13 @@ class MainWindow(QMainWindow):
         }}
         
         QScrollBar::handle:vertical {{
-            background-color: {self.colors['text_tertiary']};
+            background-color: #CCCCCC;
             border-radius: 6px;
             min-height: 20px;
         }}
         
         QScrollBar::handle:vertical:hover {{
-            background-color: {self.colors['text_secondary']};
+            background-color: #999999;
         }}
         
         QScrollBar::add-line:vertical,
@@ -692,20 +732,20 @@ class MainWindow(QMainWindow):
         
         /* Labels */
         QLabel {{
-            color: {self.colors['text_primary']};
+            color: #000000;
             font-size: 14px;
         }}
         
         QLabel#titleLabel {{
             font-size: 20px;
             font-weight: 600;
-            color: {self.colors['text_primary']};
+            color: #000000;
             margin: 8px 0px;
         }}
         
         QLabel#subtitleLabel {{
             font-size: 12px;
-            color: {self.colors['text_secondary']};
+            color: #333333;
         }}
         
         /* ComboBox */
@@ -715,25 +755,54 @@ class MainWindow(QMainWindow):
             border-radius: 6px;
             padding: 6px 12px;
             min-width: 120px;
+            color: #000000;
         }}
         
         QComboBox:hover {{
-            border-color: {self.colors['text_secondary']};
+            border-color: #999999;
+            color: #000000;
         }}
         
         QComboBox:focus {{
             border-color: {self.colors['border_focus']};
+            color: #000000;
         }}
         
         QComboBox::drop-down {{
             border: none;
             width: 20px;
+            background-color: white;
         }}
         
         QComboBox::down-arrow {{
-            image: url(down-arrow.png);
             width: 12px;
             height: 12px;
+        }}
+        
+        QComboBox QAbstractItemView {{
+            background-color: white;
+            border: 1px solid {self.colors['border']};
+            border-radius: 4px;
+            color: #000000;
+            selection-background-color: {self.colors['bg_accent']};
+            selection-color: #000000;
+        }}
+        
+        QComboBox QAbstractItemView::item {{
+            background-color: white;
+            color: #000000;
+            padding: 8px;
+            border: none;
+        }}
+        
+        QComboBox QAbstractItemView::item:hover {{
+            background-color: #e3f2fd;
+            color: #000000;
+        }}
+        
+        QComboBox QAbstractItemView::item:selected {{
+            background-color: {self.colors['bg_accent']};
+            color: #000000;
         }}
         """
         
@@ -876,10 +945,11 @@ Bot Distribution:
                 background-color: white;
                 border: 1px solid {self.colors['border']};
                 border-radius: 8px;
+                color: #000000;
             }}
             QMessageBox QPushButton {{
                 background-color: {self.colors['bg_accent']};
-                color: white;
+                color: #000000;
                 border: none;
                 border-radius: 6px;
                 padding: 8px 24px;
@@ -889,6 +959,7 @@ Bot Distribution:
             }}
             QMessageBox QPushButton:hover {{
                 background-color: {self.colors['bg_accent_hover']};
+                color: #000000;
             }}
         """)
         
@@ -896,8 +967,6 @@ Bot Distribution:
     
     def export_conversations(self):
         """Export conversations with a modern file dialog."""
-        from PyQt6.QtWidgets import QFileDialog
-        
         # Create file dialog with Windows 11 styling
         file_dialog = QFileDialog(self)
         file_dialog.setWindowTitle("Export Conversations")
@@ -944,9 +1013,12 @@ Bot Distribution:
     def closeEvent(self, event):
         """Handle window close event."""
         # Save window geometry for next session
-        self.settings = QSettings("PoeCM", "ConversationManager")
-        self.settings.setValue("geometry", self.saveGeometry())
-        self.settings.setValue("windowState", self.saveState())
+        try:
+            settings = QSettings("PoeCM", "ConversationManager")
+            settings.setValue("geometry", self.saveGeometry())
+            settings.setValue("windowState", self.saveState())
+        except Exception as e:
+            print(f"Could not save window state: {e}")
         
         if self.db:
             self.db.close()
@@ -956,11 +1028,9 @@ Bot Distribution:
     def restore_window_state(self):
         """Restore window state from settings."""
         try:
-            from PyQt6.QtCore import QSettings
-            
-            self.settings = QSettings("PoeCM", "ConversationManager") 
-            geometry = self.settings.value("geometry")
-            window_state = self.settings.value("windowState")
+            settings = QSettings("PoeCM", "ConversationManager")
+            geometry = settings.value("geometry")
+            window_state = settings.value("windowState")
             
             if geometry:
                 self.restoreGeometry(geometry)
@@ -978,8 +1048,6 @@ Bot Distribution:
     
     def center_window(self):
         """Center the window on the screen."""
-        from PyQt6.QtGui import QGuiApplication
-        
         screen = QGuiApplication.primaryScreen()
         if screen:
             screen_geometry = screen.availableGeometry()
@@ -991,8 +1059,6 @@ Bot Distribution:
         
     def apply_windows11_animations(self):
         """Apply subtle animations for Windows 11 feel."""
-        from PyQt6.QtCore import QPropertyAnimation, QEasingCurve
-        
         # Create fade-in animation for the main window
         self.fade_animation = QPropertyAnimation(self, b"windowOpacity")
         self.fade_animation.setDuration(200)
@@ -1029,25 +1095,23 @@ Bot Distribution:
             except Exception as e:
                 print(f"Error updating bot filter: {e}")
     
-    def apply_dark_theme(self):
-        """Apply dark theme for Windows 11 dark mode."""
-        # Update colors for dark theme
-        dark_colors = {
-            'bg_primary': '#202020',
-            'bg_secondary': '#2D2D2D',
-            'bg_accent': '#0078D4',
-            'bg_accent_hover': '#106EBE',
-            'bg_accent_pressed': '#005A9E',
-            'text_primary': '#FFFFFF',
-            'text_secondary': '#E5E5E5',
-            'text_tertiary': '#C0C0C0',
-            'text_white': '#FFFFFF',
-            'border': '#404040',
-            'border_focus': '#0078D4',
-            'success': '#107C10',
-            'warning': '#FF8C00',
-            'error': '#D13438',
-        }
-        
-        # Apply dark theme (this would be called based on system theme detection)
-        # Implementation would be similar to setup_style() but with dark colors
+    
+def run_gui():
+    """Run the GUI application."""
+    app = QApplication(sys.argv)
+    
+    # Set application properties
+    app.setApplicationName("Poe.com Conversation Manager")
+    app.setApplicationDisplayName("Conversation Manager")
+    app.setApplicationVersion("2.0")
+    app.setOrganizationName("PoeCM")
+    
+    # Create and show main window
+    window = MainWindow()
+    window.show()
+    
+    return app.exec()
+
+
+if __name__ == "__main__":
+    sys.exit(run_gui())

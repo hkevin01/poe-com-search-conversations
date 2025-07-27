@@ -33,30 +33,23 @@ class ModernMainWindow(QMainWindow):
         self.init_database()
         self.setup_windows11_style()
         self.init_modern_ui()
-        self.restore_window_state()
         self.load_conversations()
     
     def setup_windows11_style(self):
-        """Apply comprehensive Windows 11 styling."""
-        # Windows 11 Fluent Design color palette
+        """Apply comprehensive light theme styling."""
+        # Light theme color palette only
         self.colors = {
-            'bg_primary': '#F3F3F3',
-            'bg_secondary': '#FAFAFA', 
+            'bg_primary': '#FFFFFF',
+            'bg_secondary': '#FFFFFF', 
             'bg_card': '#FFFFFF',
             'bg_accent': '#0078D4',
             'bg_accent_hover': '#106EBE',
             'bg_accent_pressed': '#005A9E',
-            'text_primary': '#323130',
-            'text_secondary': '#605E5C',
-            'text_tertiary': '#8A8886',
-            'text_white': '#FFFFFF',
             'border': '#E1DFDD',
             'border_focus': '#0078D4',
             'success': '#107C10',
             'warning': '#FF8C00',
             'error': '#D13438',
-            'user_bg': '#E3F2FD',
-            'bot_bg': '#F5F5F5'
         }
         
         # Apply comprehensive Windows 11 stylesheet
@@ -64,7 +57,7 @@ class ModernMainWindow(QMainWindow):
         /* Main Window */
         QMainWindow {{
             background-color: {self.colors['bg_primary']};
-            color: {self.colors['text_primary']};
+            color: #000000;
             font-family: 'Segoe UI', 'San Francisco', system-ui, sans-serif;
             font-size: 14px;
         }}
@@ -73,21 +66,31 @@ class ModernMainWindow(QMainWindow):
         QLabel#titleLabel {{
             font-size: 28px;
             font-weight: 600;
-            color: {self.colors['text_primary']};
+            color: #000000;
             margin: 0px 0px 8px 0px;
         }}
         
         QLabel#subtitleLabel {{
             font-size: 14px;
-            color: {self.colors['text_secondary']};
+            color: #333333;
             margin: 0px 0px 16px 0px;
         }}
         
         QLabel#sectionTitle {{
             font-size: 16px;
             font-weight: 600;
-            color: {self.colors['text_primary']};
+            color: #000000;
             margin: 8px 0px;
+        }}
+        
+        /* All Labels Default */
+        QLabel {{
+            color: #000000;
+        }}
+        
+        /* All Widgets Default */
+        QWidget {{
+            color: #000000;
         }}
         
         /* Cards and Frames */
@@ -106,23 +109,25 @@ class ModernMainWindow(QMainWindow):
             border-radius: 8px;
             padding: 12px 16px;
             font-size: 14px;
-            color: {self.colors['text_primary']};
+            color: #000000;
             min-height: 20px;
         }}
         
         QLineEdit:focus {{
             border-color: {self.colors['border_focus']};
             outline: none;
+            color: #000000;
         }}
         
         QLineEdit:hover {{
-            border-color: {self.colors['text_secondary']};
+            border-color: #999999;
+            color: #000000;
         }}
         
         /* Primary Buttons */
         QPushButton {{
             background-color: {self.colors['bg_accent']};
-            color: {self.colors['text_white']};
+            color: #000000;
             border: none;
             border-radius: 8px;
             padding: 12px 24px;
@@ -134,22 +139,25 @@ class ModernMainWindow(QMainWindow):
         
         QPushButton:hover {{
             background-color: {self.colors['bg_accent_hover']};
+            color: #000000;
         }}
         
         QPushButton:pressed {{
             background-color: {self.colors['bg_accent_pressed']};
+            color: #000000;
         }}
         
         /* Secondary Buttons */
         QPushButton#secondaryButton {{
             background-color: {self.colors['bg_card']};
-            color: {self.colors['text_primary']};
+            color: #000000;
             border: 2px solid {self.colors['border']};
         }}
         
         QPushButton#secondaryButton:hover {{
             background-color: {self.colors['bg_primary']};
-            border-color: {self.colors['text_secondary']};
+            border-color: #999999;
+            color: #000000;
         }}
         
         /* Lists */
@@ -159,6 +167,7 @@ class ModernMainWindow(QMainWindow):
             border-radius: 12px;
             outline: none;
             padding: 8px;
+            color: #000000;
         }}
         
         QListWidget::item {{
@@ -167,15 +176,17 @@ class ModernMainWindow(QMainWindow):
             border-radius: 8px;
             padding: 16px;
             margin: 4px 0px;
+            color: #000000;
         }}
         
         QListWidget::item:selected {{
             background-color: {self.colors['bg_accent']};
-            color: {self.colors['text_white']};
+            color: #000000;
         }}
         
         QListWidget::item:hover {{
             background-color: {self.colors['bg_primary']};
+            color: #000000;
         }}
         
         /* Text Areas */
@@ -187,7 +198,7 @@ class ModernMainWindow(QMainWindow):
             font-family: 'Segoe UI', system-ui, sans-serif;
             font-size: 14px;
             line-height: 1.6;
-            color: {self.colors['text_primary']};
+            color: #000000;
         }}
         
         /* ComboBox */
@@ -198,14 +209,54 @@ class ModernMainWindow(QMainWindow):
             padding: 8px 16px;
             min-width: 120px;
             min-height: 20px;
+            color: #000000;
         }}
         
         QComboBox:hover {{
-            border-color: {self.colors['text_secondary']};
+            border-color: #999999;
+            color: #000000;
         }}
         
         QComboBox:focus {{
             border-color: {self.colors['border_focus']};
+            color: #000000;
+        }}
+        
+        QComboBox::drop-down {{
+            border: none;
+            width: 20px;
+            background-color: white;
+        }}
+        
+        QComboBox::down-arrow {{
+            width: 12px;
+            height: 12px;
+        }}
+        
+        QComboBox QAbstractItemView {{
+            background-color: white;
+            border: 1px solid {self.colors['border']};
+            border-radius: 4px;
+            color: #000000;
+            selection-background-color: {self.colors['bg_accent']};
+            selection-color: #000000;
+        }}
+        
+        QComboBox QAbstractItemView::item {{
+            background-color: white;
+            color: #000000;
+            padding: 8px;
+            border: none;
+        }}
+        
+        QComboBox QAbstractItemView::item:hover {{
+            background-color: #e3f2fd;
+            color: #000000;
+        }}
+        
+        QComboBox QAbstractItemView::item:selected {{
+            background-color: {self.colors['bg_accent']};
+            color: #000000;
         }}
         
         /* Splitter */
@@ -220,7 +271,7 @@ class ModernMainWindow(QMainWindow):
         /* Menu Bar */
         QMenuBar {{
             background-color: {self.colors['bg_primary']};
-            color: {self.colors['text_primary']};
+            color: #000000;
             border-bottom: 1px solid {self.colors['border']};
             padding: 8px;
         }}
@@ -229,18 +280,51 @@ class ModernMainWindow(QMainWindow):
             background-color: transparent;
             padding: 8px 16px;
             border-radius: 6px;
+            color: #000000;
         }}
         
         QMenuBar::item:selected {{
             background-color: {self.colors['bg_accent']};
-            color: {self.colors['text_white']};
+            color: #000000;
+        }}
+        
+        /* Menus */
+        QMenu {{
+            background-color: white;
+            border: 1px solid {self.colors['border']};
+            border-radius: 8px;
+            padding: 4px;
+            color: #000000;
+        }}
+        
+        QMenu::item {{
+            padding: 8px 16px;
+            border-radius: 4px;
+            color: #000000;
+            background-color: white;
+        }}
+        
+        QMenu::item:selected {{
+            background-color: {self.colors['bg_accent']};
+            color: #000000;
+        }}
+        
+        QMenu::item:hover {{
+            background-color: #e3f2fd;
+            color: #000000;
+        }}
+        
+        QMenu::separator {{
+            height: 1px;
+            background-color: {self.colors['border']};
+            margin: 4px 8px;
         }}
         
         /* Status Bar */
         QStatusBar {{
             background-color: {self.colors['bg_secondary']};
             border-top: 1px solid {self.colors['border']};
-            color: {self.colors['text_secondary']};
+            color: #333333;
             padding: 8px;
         }}
         
@@ -252,14 +336,14 @@ class ModernMainWindow(QMainWindow):
         }}
         
         QScrollBar::handle:vertical {{
-            background-color: {self.colors['text_tertiary']};
+            background-color: #CCCCCC;
             border-radius: 6px;
             min-height: 20px;
             margin: 2px;
         }}
         
         QScrollBar::handle:vertical:hover {{
-            background-color: {self.colors['text_secondary']};
+            background-color: #999999;
         }}
         
         QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{
@@ -476,26 +560,204 @@ class ModernMainWindow(QMainWindow):
         self.status_bar = self.statusBar()
         self.status_bar.showMessage("Ready")
     
-    # Add placeholder methods that need to be implemented
     def load_conversations(self):
         """Load conversations from database."""
-        pass
+        if not self.db:
+            return
+        
+        try:
+            # Load all conversations
+            conversations = self.db.search_conversations("")
+            self.conversations = conversations
+            self.populate_conversation_list(conversations)
+            
+            # Update bot filter
+            bots = self.db.get_all_bots()
+            self.update_bot_filter(bots)
+            
+            self.status_bar.showMessage(f"Loaded {len(conversations)} conversations")
+            
+        except Exception as e:
+            QMessageBox.warning(self, "Load Error", f"Failed to load data: {e}")
+            self.status_bar.showMessage("Load error")
+    
+    def populate_conversation_list(self, conversations):
+        """Populate the conversation list."""
+        self.conversation_list.clear()
+        
+        for conv in conversations:
+            item = QListWidgetItem()
+            
+            # Format display text
+            title = conv.title[:60] + "..." if len(conv.title) > 60 else conv.title
+            bot_name = f" [{conv.bot_name}]" if conv.bot_name else ""
+            date_str = conv.created_at.strftime("%Y-%m-%d") if conv.created_at else "Unknown"
+            message_info = f" ({conv.message_count} msgs)" if conv.message_count > 0 else ""
+            
+            display_text = f"{title}{bot_name}{message_info}\n📅 {date_str}"
+            
+            item.setText(display_text)
+            item.setData(Qt.ItemDataRole.UserRole, conv)
+            
+            self.conversation_list.addItem(item)
+    
+    def update_bot_filter(self, bots):
+        """Update bot filter dropdown."""
+        self.bot_filter.clear()
+        self.bot_filter.addItem("All Bots")
+        self.bot_filter.addItems(bots)
     
     def search_conversations(self):
         """Search conversations."""
-        pass
+        if not self.db:
+            return
+        
+        query = self.search_input.text().strip()
+        filters = {}
+        
+        bot_selection = self.bot_filter.currentText()
+        if bot_selection != "All Bots":
+            filters['bot_name'] = bot_selection
+        
+        try:
+            conversations = self.db.search_conversations(query, filters)
+            self.conversations = conversations
+            self.populate_conversation_list(conversations)
+            
+            # Update status
+            if query or filters:
+                self.status_bar.showMessage(f"Found {len(conversations)} conversations matching search")
+            else:
+                self.status_bar.showMessage(f"Showing all {len(conversations)} conversations")
+                
+        except Exception as e:
+            QMessageBox.warning(self, "Search Error", f"Search failed: {e}")
+            self.status_bar.showMessage("Search error")
     
     def filter_conversations(self):
         """Filter conversations by bot."""
-        pass
+        self.search_conversations()
     
     def clear_search(self):
         """Clear search results."""
-        pass
+        self.search_input.clear()
+        self.bot_filter.setCurrentIndex(0)
+        self.load_conversations()
     
     def show_conversation_details(self, item):
         """Show conversation details."""
-        pass
+        conv = item.data(Qt.ItemDataRole.UserRole)
+        if not conv:
+            return
+        
+        # Create rich HTML content for better formatting
+        html_content = f"""
+        <div style="font-family: 'Segoe UI', system-ui, sans-serif; line-height: 1.6; color: #323130;">
+            <div style="background-color: #F3F3F3; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                <h2 style="margin: 0 0 12px 0; color: #323130; font-size: 20px; font-weight: 600;">
+                    {conv.title}
+                </h2>
+                <div style="display: flex; gap: 24px; flex-wrap: wrap; margin-bottom: 12px;">
+                    <span style="color: #605E5C; font-size: 14px;">
+                        <strong>Bot:</strong> {conv.bot_name or 'Unknown'}
+                    </span>
+                    <span style="color: #605E5C; font-size: 14px;">
+                        <strong>Messages:</strong> {conv.message_count}
+                    </span>
+                    <span style="color: #605E5C; font-size: 14px;">
+                        <strong>Date:</strong> {self.format_date(conv.created_at)}
+                    </span>
+                </div>
+                <div style="margin-top: 8px;">
+                    <a href="{conv.url}" style="color: #0078D4; text-decoration: none; font-size: 14px;">
+                        View on Poe.com →
+                    </a>
+                </div>
+            </div>
+        """
+        
+        # Add conversation content
+        if conv.content:
+            try:
+                messages = json.loads(conv.content)
+                html_content += '<div style="margin-top: 20px;">'
+                
+                for i, message in enumerate(messages):
+                    sender = message.get('sender', 'unknown')
+                    content = message.get('content', '')
+                    
+                    # Style based on sender
+                    if sender == 'user':
+                        bg_color = '#E3F2FD'
+                        sender_label = 'You'
+                        sender_color = '#1976D2'
+                    else:
+                        bg_color = '#F5F5F5'
+                        sender_label = conv.bot_name or 'Bot'
+                        sender_color = '#424242'
+                    
+                    # Format message content
+                    formatted_content = content.replace('\n', '<br>')
+                    
+                    html_content += f"""
+                    <div style="margin-bottom: 16px; padding: 16px; background-color: {bg_color}; 
+                                border-radius: 8px; border-left: 4px solid {sender_color};">
+                        <div style="font-weight: 600; color: {sender_color}; margin-bottom: 8px; font-size: 14px;">
+                            {sender_label}
+                        </div>
+                        <div style="color: #323130; font-size: 14px; line-height: 1.5;">
+                            {formatted_content}
+                        </div>
+                    </div>
+                    """
+                
+                html_content += '</div>'
+                
+            except json.JSONDecodeError:
+                # Fallback for non-JSON content
+                html_content += f"""
+                <div style="background-color: #F5F5F5; padding: 16px; border-radius: 8px; margin-top: 20px;">
+                    <h3 style="margin: 0 0 12px 0; color: #323130;">Content:</h3>
+                    <div style="color: #323130; white-space: pre-wrap; font-size: 14px;">
+                        {conv.content}
+                    </div>
+                </div>
+                """
+        else:
+            html_content += """
+            <div style="background-color: #FFF4E6; padding: 16px; border-radius: 8px; margin-top: 20px; 
+                        border-left: 4px solid #FF8C00;">
+                <div style="color: #8A8886; font-style: italic;">
+                    No conversation content available.
+                </div>
+            </div>
+            """
+        
+        html_content += '</div>'
+        self.details_area.setHtml(html_content)
+    
+    def format_date(self, date_obj):
+        """Format date in a user-friendly way."""
+        if not date_obj:
+            return "Unknown date"
+        
+        try:
+            if isinstance(date_obj, str):
+                date_obj = datetime.fromisoformat(date_obj.replace('Z', ''))
+            
+            now = datetime.now()
+            diff = now - date_obj
+            
+            if diff.days == 0:
+                return date_obj.strftime("Today at %I:%M %p")
+            elif diff.days == 1:
+                return date_obj.strftime("Yesterday at %I:%M %p")
+            elif diff.days <= 7:
+                return date_obj.strftime("%A at %I:%M %p")
+            else:
+                return date_obj.strftime("%B %d, %Y at %I:%M %p")
+        except:
+            return str(date_obj)[:16] if date_obj else "Unknown date"
 
 def run_modern_gui():
     """Run the modern GUI application."""
