@@ -396,6 +396,7 @@ class MainWindow(QMainWindow):
         
         # Apply styling
         self.apply_styling()
+        self.setup_style()
     
     def create_menus(self):
         """Create application menus."""
@@ -463,17 +464,306 @@ class MainWindow(QMainWindow):
             }
         """)
     
+    def setup_style(self):
+        """Setup Windows 11 style theme."""
+        # Windows 11 color palette
+        self.colors = {
+            'bg_primary': '#F3F3F3',      # Light gray background
+            'bg_secondary': '#FAFAFA',     # Lighter gray for cards
+            'bg_accent': '#0078D4',        # Windows 11 blue
+            'bg_accent_hover': '#106EBE',  # Darker blue for hover
+            'bg_accent_pressed': '#005A9E', # Even darker for pressed
+            'text_primary': '#323130',     # Dark gray text
+            'text_secondary': '#605E5C',   # Medium gray text
+            'text_tertiary': '#8A8886',    # Light gray text
+            'text_white': '#FFFFFF',       # White text
+            'border': '#E1DFDD',           # Light border
+            'border_focus': '#0078D4',     # Blue border for focus
+            'success': '#107C10',          # Green
+            'warning': '#FF8C00',          # Orange
+            'error': '#D13438',            # Red
+        }
+        
+        # Windows 11 style sheet
+        style = f"""
+        /* Main Window */
+        QMainWindow {{
+            background-color: {self.colors['bg_primary']};
+            color: {self.colors['text_primary']};
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            font-size: 14px;
+        }}
+        
+        /* Central Widget */
+        QWidget#centralWidget {{
+            background-color: {self.colors['bg_primary']};
+            border: none;
+        }}
+        
+        /* Search Section */
+        QFrame#searchFrame {{
+            background-color: {self.colors['bg_secondary']};
+            border: 1px solid {self.colors['border']};
+            border-radius: 8px;
+            padding: 16px;
+            margin: 8px;
+        }}
+        
+        /* Search Input */
+        QLineEdit {{
+            background-color: white;
+            border: 2px solid {self.colors['border']};
+            border-radius: 6px;
+            padding: 8px 12px;
+            font-size: 14px;
+            color: {self.colors['text_primary']};
+        }}
+        
+        QLineEdit:focus {{
+            border-color: {self.colors['border_focus']};
+            outline: none;
+        }}
+        
+        QLineEdit:hover {{
+            border-color: {self.colors['text_secondary']};
+        }}
+        
+        /* Buttons */
+        QPushButton {{
+            background-color: {self.colors['bg_accent']};
+            color: {self.colors['text_white']};
+            border: none;
+            border-radius: 6px;
+            padding: 8px 16px;
+            font-size: 14px;
+            font-weight: 600;
+            min-width: 80px;
+        }}
+        
+        QPushButton:hover {{
+            background-color: {self.colors['bg_accent_hover']};
+        }}
+        
+        QPushButton:pressed {{
+            background-color: {self.colors['bg_accent_pressed']};
+        }}
+        
+        QPushButton:disabled {{
+            background-color: {self.colors['text_tertiary']};
+            color: {self.colors['bg_primary']};
+        }}
+        
+        /* Secondary Button */
+        QPushButton#secondaryButton {{
+            background-color: white;
+            color: {self.colors['text_primary']};
+            border: 2px solid {self.colors['border']};
+        }}
+        
+        QPushButton#secondaryButton:hover {{
+            background-color: {self.colors['bg_primary']};
+            border-color: {self.colors['text_secondary']};
+        }}
+        
+        /* List Widgets */
+        QListWidget {{
+            background-color: white;
+            border: 1px solid {self.colors['border']};
+            border-radius: 8px;
+            padding: 4px;
+            outline: none;
+        }}
+        
+        QListWidget::item {{
+            background-color: transparent;
+            border: none;
+            border-radius: 6px;
+            padding: 12px;
+            margin: 2px;
+            color: {self.colors['text_primary']};
+        }}
+        
+        QListWidget::item:selected {{
+            background-color: {self.colors['bg_accent']};
+            color: {self.colors['text_white']};
+        }}
+        
+        QListWidget::item:hover {{
+            background-color: {self.colors['bg_primary']};
+        }}
+        
+        /* Text Areas */
+        QTextEdit {{
+            background-color: white;
+            border: 1px solid {self.colors['border']};
+            border-radius: 8px;
+            padding: 12px;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            font-size: 14px;
+            line-height: 1.5;
+            color: {self.colors['text_primary']};
+        }}
+        
+        QTextEdit:focus {{
+            border-color: {self.colors['border_focus']};
+        }}
+        
+        /* Splitter */
+        QSplitter::handle {{
+            background-color: {self.colors['border']};
+        }}
+        
+        QSplitter::handle:horizontal {{
+            width: 2px;
+        }}
+        
+        QSplitter::handle:vertical {{
+            height: 2px;
+        }}
+        
+        /* Status Bar */
+        QStatusBar {{
+            background-color: {self.colors['bg_secondary']};
+            border-top: 1px solid {self.colors['border']};
+            color: {self.colors['text_secondary']};
+            padding: 4px 8px;
+        }}
+        
+        /* Menu Bar */
+        QMenuBar {{
+            background-color: {self.colors['bg_primary']};
+            color: {self.colors['text_primary']};
+            border-bottom: 1px solid {self.colors['border']};
+            padding: 4px 8px;
+        }}
+        
+        QMenuBar::item {{
+            background-color: transparent;
+            padding: 6px 12px;
+            border-radius: 4px;
+        }}
+        
+        QMenuBar::item:selected {{
+            background-color: {self.colors['bg_accent']};
+            color: {self.colors['text_white']};
+        }}
+        
+        /* Menus */
+        QMenu {{
+            background-color: white;
+            border: 1px solid {self.colors['border']};
+            border-radius: 8px;
+            padding: 4px;
+            color: {self.colors['text_primary']};
+        }}
+        
+        QMenu::item {{
+            padding: 8px 16px;
+            border-radius: 4px;
+        }}
+        
+        QMenu::item:selected {{
+            background-color: {self.colors['bg_accent']};
+            color: {self.colors['text_white']};
+        }}
+        
+        /* Scroll Bars */
+        QScrollBar:vertical {{
+            background-color: {self.colors['bg_primary']};
+            width: 12px;
+            border-radius: 6px;
+        }}
+        
+        QScrollBar::handle:vertical {{
+            background-color: {self.colors['text_tertiary']};
+            border-radius: 6px;
+            min-height: 20px;
+        }}
+        
+        QScrollBar::handle:vertical:hover {{
+            background-color: {self.colors['text_secondary']};
+        }}
+        
+        QScrollBar::add-line:vertical,
+        QScrollBar::sub-line:vertical {{
+            border: none;
+            background: none;
+        }}
+        
+        /* Labels */
+        QLabel {{
+            color: {self.colors['text_primary']};
+            font-size: 14px;
+        }}
+        
+        QLabel#titleLabel {{
+            font-size: 20px;
+            font-weight: 600;
+            color: {self.colors['text_primary']};
+            margin: 8px 0px;
+        }}
+        
+        QLabel#subtitleLabel {{
+            font-size: 12px;
+            color: {self.colors['text_secondary']};
+        }}
+        
+        /* ComboBox */
+        QComboBox {{
+            background-color: white;
+            border: 2px solid {self.colors['border']};
+            border-radius: 6px;
+            padding: 6px 12px;
+            min-width: 120px;
+        }}
+        
+        QComboBox:hover {{
+            border-color: {self.colors['text_secondary']};
+        }}
+        
+        QComboBox:focus {{
+            border-color: {self.colors['border_focus']};
+        }}
+        
+        QComboBox::drop-down {{
+            border: none;
+            width: 20px;
+        }}
+        
+        QComboBox::down-arrow {{
+            image: url(down-arrow.png);
+            width: 12px;
+            height: 12px;
+        }}
+        """
+        
+        self.setStyleSheet(style)
+    
     def init_database(self):
         """Initialize database connection."""
         try:
-            # Use correct storage directory path (go up from src to project root)
-            project_root = os.path.dirname(os.path.dirname(__file__))
+            # Get project root by going up TWO levels from src/gui/
+            current_dir = os.path.dirname(__file__)  # src/gui/
+            src_dir = os.path.dirname(current_dir)   # src/
+            project_root = os.path.dirname(src_dir)  # project root
+            
             db_path = os.path.join(project_root, "storage", "conversations.db")
             os.makedirs(os.path.dirname(db_path), exist_ok=True)
+            
+            print(f"🔍 GUI looking for database at: {db_path}")
+            print(f"🔍 Database exists: {os.path.exists(db_path)}")
             
             self.db = ConversationDatabase(db_path)
             self.status_bar.showMessage(f"Database connected: {db_path}")
             print(f"🗄️  Database initialized: {db_path}")
+            
+            # Test database connection and show stats
+            try:
+                stats = self.db.get_stats()
+                print(f"📊 Database stats: {stats['total_conversations']} conversations, {stats['total_messages']} messages")
+            except Exception as e:
+                print(f"⚠️  Could not get database stats: {e}")
+                
         except Exception as e:
             QMessageBox.critical(self, "Database Error", 
                                f"Failed to connect to database: {e}")
@@ -561,42 +851,203 @@ Bot Distribution:
             QMessageBox.warning(self, "Statistics Error", f"Failed to get statistics: {e}")
     
     def show_about(self):
-        """Show about dialog."""
+        """Show about dialog with Windows 11 styling."""
         about_text = """
-Poe.com Conversation Manager
-
-A tool for extracting, storing, and searching conversations from Poe.com.
-
-Phase 4: GUI & User Experience
-Version: 4.0.0-beta
-
-Features:
-• Local SQLite database storage
-• Full-text search capabilities
-• Conversation browsing and viewing
-• Bot categorization and filtering
-• Export functionality
-
-Privacy-focused • Open Source • Local Processing
+        <div style="font-family: 'Segoe UI', system-ui, sans-serif; text-align: center;">
+            <h2 style="color: #323130; margin-bottom: 16px;">Poe.com Conversation Manager</h2>
+            <p style="color: #605E5C; margin-bottom: 12px; font-size: 14px;">
+                A modern tool for managing and searching your Poe.com conversations
+            </p>
+            <p style="color: #8A8886; font-size: 12px;">
+                Built with PyQt6 and Windows 11 design principles
+            </p>
+        </div>
         """
-        QMessageBox.about(self, "About", about_text.strip())
-
-
-def run_gui():
-    """Run the GUI application."""
-    app = QApplication(sys.argv)
+        
+        msg = QMessageBox(self)
+        msg.setWindowTitle("About")
+        msg.setTextFormat(Qt.TextFormat.RichText)
+        msg.setText(about_text)
+        msg.setStandardButtons(QMessageBox.StandardButton.Ok)
+        
+        # Apply Windows 11 styling to message box
+        msg.setStyleSheet(f"""
+            QMessageBox {{
+                background-color: white;
+                border: 1px solid {self.colors['border']};
+                border-radius: 8px;
+            }}
+            QMessageBox QPushButton {{
+                background-color: {self.colors['bg_accent']};
+                color: white;
+                border: none;
+                border-radius: 6px;
+                padding: 8px 24px;
+                font-size: 14px;
+                font-weight: 600;
+                min-width: 80px;
+            }}
+            QMessageBox QPushButton:hover {{
+                background-color: {self.colors['bg_accent_hover']};
+            }}
+        """)
+        
+        msg.exec()
     
-    # Set application properties
-    app.setApplicationName("Poe.com Conversation Manager")
-    app.setApplicationVersion("4.0.0-beta")
-    app.setOrganizationName("Poe Search")
+    def export_conversations(self):
+        """Export conversations with a modern file dialog."""
+        from PyQt6.QtWidgets import QFileDialog
+        
+        # Create file dialog with Windows 11 styling
+        file_dialog = QFileDialog(self)
+        file_dialog.setWindowTitle("Export Conversations")
+        file_dialog.setAcceptMode(QFileDialog.AcceptMode.AcceptSave)
+        file_dialog.setNameFilters([
+            "JSON files (*.json)",
+            "Markdown files (*.md)", 
+            "CSV files (*.csv)",
+            "All files (*.*)"
+        ])
+        file_dialog.setDefaultSuffix("json")
+        
+        if file_dialog.exec() == QFileDialog.DialogCode.Accepted:
+            filename = file_dialog.selectedFiles()[0]
+            format_type = "json"
+            
+            if filename.endswith('.md'):
+                format_type = "markdown"
+            elif filename.endswith('.csv'):
+                format_type = "csv"
+            
+            try:
+                exported_file = self.db.export_conversations(format_type, filename)
+                
+                # Show success message
+                msg = QMessageBox(self)
+                msg.setIcon(QMessageBox.Icon.Information)
+                msg.setWindowTitle("Export Successful")
+                msg.setText(f"Conversations exported successfully to:\n{exported_file}")
+                msg.setStandardButtons(QMessageBox.StandardButton.Ok)
+                msg.exec()
+                
+                self.status_bar.showMessage(f"Exported to {exported_file}", 3000)
+                
+            except Exception as e:
+                # Show error message
+                msg = QMessageBox(self)
+                msg.setIcon(QMessageBox.Icon.Critical)
+                msg.setWindowTitle("Export Failed")
+                msg.setText(f"Failed to export conversations:\n{str(e)}")
+                msg.setStandardButtons(QMessageBox.StandardButton.Ok)
+                msg.exec()
     
-    # Create and show main window
-    window = MainWindow()
-    window.show()
+    def closeEvent(self, event):
+        """Handle window close event."""
+        # Save window geometry for next session
+        self.settings = QSettings("PoeCM", "ConversationManager")
+        self.settings.setValue("geometry", self.saveGeometry())
+        self.settings.setValue("windowState", self.saveState())
+        
+        if self.db:
+            self.db.close()
+        
+        event.accept()
     
-    return app.exec()
-
-
-if __name__ == "__main__":
-    sys.exit(run_gui())
+    def restore_window_state(self):
+        """Restore window state from settings."""
+        try:
+            from PyQt6.QtCore import QSettings
+            
+            self.settings = QSettings("PoeCM", "ConversationManager") 
+            geometry = self.settings.value("geometry")
+            window_state = self.settings.value("windowState")
+            
+            if geometry:
+                self.restoreGeometry(geometry)
+            else:
+                # Default positioning
+                self.resize(1400, 900)
+                self.center_window()
+                
+            if window_state:
+                self.restoreState(window_state)
+                
+        except Exception as e:
+            print(f"Could not restore window state: {e}")
+            self.center_window()
+    
+    def center_window(self):
+        """Center the window on the screen."""
+        from PyQt6.QtGui import QGuiApplication
+        
+        screen = QGuiApplication.primaryScreen()
+        if screen:
+            screen_geometry = screen.availableGeometry()
+            window_geometry = self.frameGeometry()
+            
+            center_point = screen_geometry.center()
+            window_geometry.moveCenter(center_point)
+            self.move(window_geometry.topLeft())
+        
+    def apply_windows11_animations(self):
+        """Apply subtle animations for Windows 11 feel."""
+        from PyQt6.QtCore import QPropertyAnimation, QEasingCurve
+        
+        # Create fade-in animation for the main window
+        self.fade_animation = QPropertyAnimation(self, b"windowOpacity")
+        self.fade_animation.setDuration(200)
+        self.fade_animation.setStartValue(0.0)
+        self.fade_animation.setEndValue(1.0)
+        self.fade_animation.setEasingCurve(QEasingCurve.Type.OutCubic)
+        
+    def showEvent(self, event):
+        """Handle window show event with animation."""
+        super().showEvent(event)
+        
+        # Start fade-in animation
+        if hasattr(self, 'fade_animation'):
+            self.fade_animation.start()
+    
+    def update_bot_filter(self):
+        """Update the bot filter dropdown with available bots."""
+        current_text = self.bot_filter.currentText()
+        self.bot_filter.clear()
+        self.bot_filter.addItem("All Bots")
+        
+        if self.db:
+            try:
+                bots = self.db.get_all_bots()
+                for bot in bots:
+                    if bot and bot.strip():
+                        self.bot_filter.addItem(bot)
+                
+                # Restore selection if it still exists
+                index = self.bot_filter.findText(current_text)
+                if index >= 0:
+                    self.bot_filter.setCurrentIndex(index)
+                    
+            except Exception as e:
+                print(f"Error updating bot filter: {e}")
+    
+    def apply_dark_theme(self):
+        """Apply dark theme for Windows 11 dark mode."""
+        # Update colors for dark theme
+        dark_colors = {
+            'bg_primary': '#202020',
+            'bg_secondary': '#2D2D2D',
+            'bg_accent': '#0078D4',
+            'bg_accent_hover': '#106EBE',
+            'bg_accent_pressed': '#005A9E',
+            'text_primary': '#FFFFFF',
+            'text_secondary': '#E5E5E5',
+            'text_tertiary': '#C0C0C0',
+            'text_white': '#FFFFFF',
+            'border': '#404040',
+            'border_focus': '#0078D4',
+            'success': '#107C10',
+            'warning': '#FF8C00',
+            'error': '#D13438',
+        }
+        
+        # Apply dark theme (this would be called based on system theme detection)
+        # Implementation would be similar to setup_style() but with dark colors

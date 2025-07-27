@@ -21,18 +21,22 @@ Available commands:
   launch         - Launch GUI with automatic database population
   test           - Run system tests and diagnostics
   test-unique    - Test database uniqueness constraints
+  check-db       - Check database location and content
+  fix-gui-db     - Fix GUI database path issues
   
 Examples:
   python main.py setup              # First-time setup
   python main.py launch             # Recommended for daily use
   python main.py gui                # Launch GUI directly
   python main.py test               # Verify system health
+  python main.py check-db           # Check database status
+  python main.py fix-gui-db         # Fix database path issues
         """
     )
     
     parser.add_argument(
         'command',
-        choices=['setup', 'gui', 'launch', 'test', 'test-unique'],
+        choices=['setup', 'gui', 'launch', 'test', 'test-unique', 'check-db', 'fix-gui-db'],
         help='Command to execute'
     )
     
@@ -59,7 +63,9 @@ Examples:
         'gui': 'scripts/development/launch_gui.py', 
         'launch': 'scripts/development/launch_with_data.py',
         'test': 'scripts/testing/test_system.py',
-        'test-unique': 'scripts/testing/test_uniqueness.py'
+        'test-unique': 'scripts/testing/test_uniqueness.py',
+        'check-db': 'check_database.py',
+        'fix-gui-db': 'fix_gui_database.py'
     }
     
     script_path = script_map[args.command]
