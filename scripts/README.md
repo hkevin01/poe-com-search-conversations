@@ -18,6 +18,21 @@ scripts/
 ### Setup Scripts
 - Environment setup and dependency installation
 - Virtual environment creation and management
+- **install-agent-settings-robust.sh** - Install VS Code agent settings across projects
+
+### Development Scripts
+- GUI launching and development utilities
+- Data loading and testing helpers
+
+### Testing Scripts
+- **verify-agent-settings.sh** - Verify VS Code agent settings installation
+- System integration and validation tests
+- Database integrity and uniqueness tests
+
+### Maintenance Scripts
+- **quick-fix-agent-settings.sh** - Quick fix for agent settings across projects
+- Database cleanup and optimization
+- Root directory cleanup utilities
 - Initial configuration helpers
 
 ### Development Scripts  
