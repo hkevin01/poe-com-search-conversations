@@ -76,15 +76,18 @@ def main():
     try:
         # Import and run extraction directly
         sys.path.append('src')
-        from enhanced_extractor import EnhancedPoeExtractor
+        from fixed_extractor import FixedPoeExtractor
         
-        extractor = EnhancedPoeExtractor(
+        # Get p-lat token if available
+        p_lat_token = tokens.get('p-lat')
+        
+        extractor = FixedPoeExtractor(
             p_b_token=p_b_token,
-            headless=True,  # Set to False to see browser
-            db_path="storage/conversations.db"
+            p_lat_token=p_lat_token,
+            headless=True  # Set to False to see browser
         )
         
-        success = extractor.extract_all_conversations()
+        success = extractor.run_extraction()
         
         if not success:
             print("❌ Extraction failed")
@@ -94,6 +97,8 @@ def main():
         
     except Exception as e:
         print(f"❌ Extraction error: {e}")
+        import traceback
+        traceback.print_exc()
         return 1
     
     # Step 3: Show Results

@@ -715,3 +715,42 @@ class ConversationDatabase:
         except Exception as e:
             self.logger.error(f"❌ Failed to add URL column: {e}")
             raise
+
+    def update_conversation(self, conversation: Conversation):
+        """Update an existing conversation in the database."""
+        try:
+            cursor = self.conn.cursor()
+            
+            # Convert tags to JSON string
+            tags_json = json.dumps(conversation.tags) if conversation.tags else "[]"
+            
+            cursor.execute("""
+                UPDATE conversations 
+                SET title = ?, url = ?, content = ?, bot_name = ?, 
+                    updated_at = ?, message_count = ?, tags = ?, summary = ?
+                WHERE id = ?
+            """, (
+                conversation.title,
+                conversation.url,
+                conversation.content,
+                conversation.bot_name,
+                conversation.updated_at,
+                conversation.message_count,
+                tags_json,
+                conversation.summary,
+                conversation.id
+            ))
+            
+            self.conn.commit()
+            
+            if cursor.rowcount > 0:
+                self.logger.info(f"✅ Updated conversation: {conversation.title[:50]}...")
+                return True
+            else:
+                self.logger.warning(f"⚠️ No conversation found with ID: {conversation.id}")
+                return False
+                
+        except Exception as e:
+            self.logger.error(f"❌ Failed to update conversation {conversation.id}: {e}")
+            self.conn.rollback()
+            return False

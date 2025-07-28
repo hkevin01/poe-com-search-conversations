@@ -15,6 +15,8 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.action_chains import ActionChains
+from selenium.webdriver.common.keys import Keys
 from selenium.common.exceptions import TimeoutException, NoSuchElementException
 from database import ConversationDatabase, Conversation
 
@@ -143,12 +145,38 @@ class FixedPoeExtractor:
             return []
 
     def scroll_and_load_all(self, driver):
-        """Scroll to load all conversations."""
+        """Scroll to load all conversations - targeting the correct scroll container."""
         self.logger.info("📜 Starting scroll to load all conversations...")
         
         all_conversations = []
         scroll_count = 0
         no_new_content_count = 0
+        
+        # Try to find the main scroll container
+        scroll_container = None
+        container_selectors = [
+            ".MainColumn_scrollSectionOverflow__FbPqw",  # Your specific selector
+            "[class*='MainColumn_scrollSectionOverflow']",
+            "[class*='scrollSectionOverflow']",
+            "[class*='MainColumn']",
+            "div[class*='sidebar']",
+            "aside",
+            "main"
+        ]
+        
+        for selector in container_selectors:
+            try:
+                elements = driver.find_elements(By.CSS_SELECTOR, selector)
+                if elements:
+                    scroll_container = elements[0]
+                    self.logger.info(f"✅ Found scroll container: {selector}")
+                    break
+            except Exception as e:
+                self.logger.debug(f"Selector {selector} not found: {e}")
+                continue
+        
+        if not scroll_container:
+            self.logger.warning("⚠️ No specific scroll container found, using document body")
         
         while no_new_content_count < 3 and scroll_count < 50:
             scroll_count += 1
@@ -171,51 +199,115 @@ class FixedPoeExtractor:
                 no_new_content_count += 1
                 self.logger.info(f"⏳ No new conversations found ({no_new_content_count}/3)")
             
-            # Scroll down
+            # Scroll down using different methods
             try:
-                driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-                time.sleep(2)
+                if scroll_container:
+                    # Method 1: Scroll the specific container
+                    driver.execute_script(
+                        "arguments[0].scrollTop = arguments[0].scrollHeight;", 
+                        scroll_container
+                    )
+                    self.logger.debug("📜 Scrolled container element")
+                    time.sleep(2)
+                    
+                    # Method 2: Also scroll page as backup
+                    driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+                    self.logger.debug("📜 Scrolled page body")
+                    time.sleep(1)
+                else:
+                    # Fallback: page scroll only
+                    driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+                    time.sleep(2)
+                
+                # Method 3: Try keyboard scrolling on the container
+                if scroll_container:
+                    try:
+                        from selenium.webdriver.common.action_chains import ActionChains
+                        from selenium.webdriver.common.keys import Keys
+                        
+                        ActionChains(driver).move_to_element(scroll_container).click().perform()
+                        ActionChains(driver).send_keys(Keys.PAGE_DOWN).perform()
+                        time.sleep(1)
+                        
+                    except Exception as e:
+                        self.logger.debug(f"Keyboard scroll failed: {e}")
+                
             except Exception as e:
                 self.logger.warning(f"⚠️ Scroll failed: {e}")
-                break
+                # Ultimate fallback
+                try:
+                    driver.execute_script("window.scrollBy(0, 1000);")
+                    time.sleep(2)
+                except:
+                    break
         
         self.logger.info(f"✅ Scroll complete! Found {len(all_conversations)} total conversations")
         return all_conversations
 
     def store_conversations(self, conversations):
-        """Store conversations in database."""
+        """Store conversations in database with proper error handling."""
         self.logger.info(f"💾 Storing {len(conversations)} conversations...")
         
         for conv_data in conversations:
             try:
-                # Check if exists
-                existing = self.db.get_conversation_by_id(conv_data['id'])
+                # Check if exists using a safer method
+                try:
+                    existing = self.db.get_conversation_by_id(conv_data['id'])
+                except:
+                    existing = None
                 
                 if existing:
-                    # Update URL if missing
-                    if not existing.url or existing.url != conv_data['url']:
-                        existing.url = conv_data['url']
-                        self.db.update_conversation(existing)
-                        self.stats['updated_conversations'] += 1
+                    # Update URL if missing and we have update method
+                    if hasattr(self.db, 'update_conversation'):
+                        if not hasattr(existing, 'url') or not existing.url or existing.url != conv_data['url']:
+                            existing.url = conv_data['url']
+                            self.db.update_conversation(existing)
+                            self.stats['updated_conversations'] += 1
+                    else:
+                        # Fallback - just log that we found existing
+                        self.logger.info(f"📋 Found existing conversation: {conv_data['title'][:50]}...")
                 else:
-                    # Create new conversation
-                    conversation = Conversation(
-                        id=conv_data['id'],
-                        title=conv_data['title'],
-                        url=conv_data['url'],
-                        created_at=datetime.now(),
-                        updated_at=datetime.now(),
-                        message_count=0,
-                        content="",
-                        bot_name="",
-                        tags=[]
-                    )
-                    
-                    self.db.add_conversation(conversation)
-                    self.stats['new_conversations'] += 1
-                    
+                    # Create new conversation with error handling
+                    try:
+                        conversation = Conversation(
+                            id=conv_data['id'],
+                            title=conv_data['title'],
+                            url=conv_data.get('url', ''),  # Safe URL access
+                            created_at=datetime.now(),
+                            updated_at=datetime.now(),
+                            message_count=0,
+                            content="",
+                            bot_name="",
+                            tags=[]
+                        )
+                        
+                        self.db.add_conversation(conversation)
+                        self.stats['new_conversations'] += 1
+                        
+                    except Exception as e:
+                        # If URL field doesn't exist in schema, try without it
+                        self.logger.warning(f"⚠️ Trying without URL field: {e}")
+                        try:
+                            conversation = Conversation(
+                                id=conv_data['id'],
+                                title=conv_data['title'],
+                                created_at=datetime.now(),
+                                updated_at=datetime.now(),
+                                message_count=0,
+                                content="",
+                                bot_name="",
+                                tags=[]
+                            )
+                            
+                            self.db.add_conversation(conversation)
+                            self.stats['new_conversations'] += 1
+                            
+                        except Exception as e2:
+                            self.logger.error(f"❌ Failed to store conversation {conv_data['id']}: {e2}")
+                            self.stats['errors'] += 1
+                        
             except Exception as e:
-                self.logger.error(f"❌ Failed to store conversation {conv_data['id']}: {e}")
+                self.logger.error(f"❌ Failed to process conversation {conv_data['id']}: {e}")
                 self.stats['errors'] += 1
 
     def run_extraction(self):
