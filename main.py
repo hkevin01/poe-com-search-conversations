@@ -64,8 +64,8 @@ Examples:
         'launch': 'scripts/development/launch_with_data.py',
         'test': 'scripts/testing/test_system.py',
         'test-unique': 'scripts/testing/test_uniqueness.py',
-        'check-db': 'check_database.py',
-        'fix-gui-db': 'fix_gui_database.py'
+        'check-db': 'scripts/maintenance/check_database.py',
+        'fix-gui-db': 'scripts/maintenance/fix_gui_database.py'
     }
     
     script_path = script_map[args.command]
