@@ -6,7 +6,7 @@ Based on PROJECT_GOALS.md - Updated: July 28, 2025
 - ✅ Foundation - Reliable Conversation Extraction (COMPLETE)
 - ✅ Enhanced Extraction & Storage (COMPLETE) 
 - 🚧 Search & Analytics (MOSTLY COMPLETE)
-- 🚧 GUI & User Experience (IN PROGRESS)
+- ✅ GUI & User Experience (COMPLETE - MAJOR PROGRESS)
 - 📋 Optimization & Polish (PLANNED)
 
 ---
@@ -31,22 +31,29 @@ Based on PROJECT_GOALS.md - Updated: July 28, 2025
 ## Task Category: GUI & User Experience - Active Development
 
 ### High Priority
-- [ ] **Drag-and-drop import/export** - Simplified file operations
-  - Drag JSON files to import conversations
-  - Drop zone for batch imports
-  - Export conversations via drag-and-drop
+- [x] **Drag-and-drop import/export** - Simplified file operations
+  - ✅ Drag JSON files to import conversations
+  - ✅ Drop zone for batch imports  
+  - ✅ Export conversations via drag-and-drop
+  - ✅ Visual feedback and progress tracking
+  - ✅ Background file processing
 
-- [ ] **Settings and preferences management** - User configuration GUI
-  - Database path selection
-  - Theme and appearance settings
-  - Export format preferences
-  - Search behavior customization
+- [x] **Settings and preferences management** - User configuration GUI
+  - ✅ Database path selection
+  - ✅ Theme and appearance settings
+  - ✅ Export format preferences
+  - ✅ Search behavior customization
+  - ✅ Full widget mapping and synchronization
+  - ✅ Tabbed settings interface (6 categories)
 
-- [ ] **One-click setup and token detection** - Streamlined onboarding
-  - Automatic p-b token detection from browser
-  - Setup wizard for new users
-  - Token validation and testing
-  - Clear setup instructions
+- [x] **One-click setup and token detection** - Streamlined onboarding
+  - ✅ Automatic p-b token detection from browser cookies
+  - ✅ Multi-browser support (Chrome, Edge, Firefox, Safari)
+  - ✅ Setup wizard for new users
+  - ✅ Token validation and secure storage
+  - ✅ Clear setup instructions and guidance
+  - ✅ Manual token entry fallback
+  - ✅ Cross-platform browser detection (Windows, macOS, Linux)
 
 ### Medium Priority
 - [ ] **Import/export wizard** - Guided data management

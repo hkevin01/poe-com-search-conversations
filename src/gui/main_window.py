@@ -24,10 +24,12 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
 
 try:
     from src.database import ConversationDatabase, Conversation
+    from src.gui.drag_drop_widget import DragDropImportExport
 except ImportError:
     # Fallback for direct execution
     sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
     from database import ConversationDatabase, Conversation
+    from gui.drag_drop_widget import DragDropImportExport
 
 
 class ConversationListWidget(QListWidget):
@@ -670,6 +672,12 @@ class MainWindow(QMainWindow):
         self.search_widget.search_requested.connect(self.perform_search)
         main_layout.addWidget(self.search_widget)
         
+        # Drag-drop import/export widget
+        self.drag_drop_widget = DragDropImportExport()
+        self.drag_drop_widget.conversations_imported.connect(self.handle_conversations_imported)
+        self.drag_drop_widget.conversations_exported.connect(self.handle_conversations_exported)
+        main_layout.addWidget(self.drag_drop_widget)
+        
         # Splitter for main content
         splitter = QSplitter(Qt.Orientation.Horizontal)
         
@@ -703,6 +711,10 @@ class MainWindow(QMainWindow):
         
         main_layout.addWidget(splitter)
         
+        # Drag and drop widget for import/export
+        self.drag_drop_widget = DragDropImportExport(self)
+        main_layout.addWidget(self.drag_drop_widget)
+        
         # Status bar
         self.status_bar = QStatusBar()
         self.setStatusBar(self.status_bar)
@@ -728,6 +740,19 @@ class MainWindow(QMainWindow):
         
         file_menu.addSeparator()
         
+        # Import/Export submenu
+        import_export_menu = file_menu.addMenu("Import/Export")
+        
+        import_action = QAction("Import Conversations...", self)
+        import_action.triggered.connect(self.show_import_dialog)
+        import_export_menu.addAction(import_action)
+        
+        export_action = QAction("Export Conversations...", self)
+        export_action.triggered.connect(self.show_export_dialog)
+        import_export_menu.addAction(export_action)
+        
+        file_menu.addSeparator()
+        
         exit_action = QAction("Exit", self)
         exit_action.triggered.connect(self.close)
         file_menu.addAction(exit_action)
@@ -738,6 +763,19 @@ class MainWindow(QMainWindow):
         stats_action = QAction("Statistics", self)
         stats_action.triggered.connect(self.show_statistics)
         view_menu.addAction(stats_action)
+        
+        # Tools menu
+        tools_menu = menubar.addMenu("Tools")
+        
+        settings_action = QAction("Settings...", self)
+        settings_action.triggered.connect(self.show_settings)
+        tools_menu.addAction(settings_action)
+        
+        tools_menu.addSeparator()
+        
+        wizard_action = QAction("Setup Wizard...", self)  
+        wizard_action.triggered.connect(self.show_setup_wizard)
+        tools_menu.addAction(wizard_action)
         
         # Help menu
         help_menu = menubar.addMenu("Help")
@@ -1205,6 +1243,158 @@ class MainWindow(QMainWindow):
     def refresh_data(self):
         """Refresh all data."""
         self.load_initial_data()
+    
+    def handle_conversations_imported(self, conversations: List[dict]):
+        """Handle imported conversations from drag-drop"""
+        if not self.db or not conversations:
+            return
+        
+        try:
+            imported_count = 0
+            skipped_count = 0
+            
+            for conv_data in conversations:
+                # Convert dict to Conversation object if needed
+                if isinstance(conv_data, dict):
+                    conversation = Conversation(
+                        id=conv_data.get('id', ''),
+                        title=conv_data.get('title', 'Imported Conversation'),
+                        created_at=conv_data.get('created_at'),
+                        bot_name=conv_data.get('bot_name', 'Unknown'),
+                        messages=conv_data.get('messages', []),
+                        message_count=len(conv_data.get('messages', []))
+                    )
+                else:
+                    conversation = conv_data
+                
+                # Check if conversation already exists
+                if not self.db.conversation_exists(conversation.id):
+                    self.db.save_conversation(conversation)
+                    imported_count += 1
+                else:
+                    skipped_count += 1
+            
+            # Update UI
+            self.load_initial_data()
+            
+            # Show import results
+            message = f"Import completed!\n"
+            message += f"Imported: {imported_count} conversations\n"
+            if skipped_count > 0:
+                message += f"Skipped (duplicates): {skipped_count} conversations"
+            
+            QMessageBox.information(self, "Import Results", message)
+            self.status_bar.showMessage(
+                f"Imported {imported_count} conversations", 5000
+            )
+            
+        except Exception as e:
+            QMessageBox.critical(
+                self, 
+                "Import Error", 
+                f"Failed to import conversations: {str(e)}"
+            )
+    
+    def handle_conversations_exported(self, file_path: str):
+        """Handle successful conversation export"""
+        self.status_bar.showMessage(f"Exported to {file_path}", 5000)
+        QMessageBox.information(
+            self,
+            "Export Complete", 
+            f"Conversations successfully exported to:\n{file_path}"
+        )
+    
+    def show_import_dialog(self):
+        """Show import dialog by scrolling to drag-drop widget"""
+        # Scroll to the drag-drop widget to make it visible
+        if hasattr(self, 'drag_drop_widget'):
+            self.drag_drop_widget.setVisible(True)
+            self.drag_drop_widget.raise_()
+            self.status_bar.showMessage(
+                "Use the Import/Export section above to import conversations", 3000
+            )
+    
+    def show_export_dialog(self):
+        """Show export dialog by highlighting drag-drop widget"""
+        if hasattr(self, 'drag_drop_widget'):
+            self.drag_drop_widget.setVisible(True)
+            self.drag_drop_widget.raise_()
+            # Focus on export section
+            self.status_bar.showMessage(
+                "Use the Import/Export section above to export conversations", 3000
+            )
+    
+    def show_settings(self):
+        """Show settings dialog"""
+        try:
+            from src.gui.settings_dialog import SettingsDialog
+        except ImportError:
+            from gui.settings_dialog import SettingsDialog
+        
+        dialog = SettingsDialog(self)
+        if dialog.exec() == dialog.DialogCode.Accepted:
+            # Settings were saved, refresh if needed
+            self.status_bar.showMessage("Settings updated", 2000)
+    
+    def show_setup_wizard(self):
+        """Show setup wizard dialog"""
+        try:
+            from src.gui.setup_wizard import show_setup_wizard
+        except ImportError:
+            from gui.setup_wizard import show_setup_wizard
+        
+        config = show_setup_wizard(self)
+        if config:
+            # Apply setup configuration
+            self.apply_setup_config(config)
+            self.status_bar.showMessage("Setup completed successfully!", 3000)
+    
+    def apply_setup_config(self, config: dict):
+        """Apply configuration from setup wizard"""
+        try:
+            # Save tokens to config file if detected
+            if config.get('tokens') or config.get('manual_token'):
+                config_dir = os.path.join(os.getcwd(), 'config')
+                os.makedirs(config_dir, exist_ok=True)
+                
+                token_file = os.path.join(config_dir, 'poe_tokens.json')
+                tokens_data = {}
+                
+                # Add detected tokens
+                if config.get('tokens'):
+                    for browser_id, info in config['tokens'].items():
+                        if info.get('has_valid_token'):
+                            tokens_data[f"{info['name']}_p-b"] = info['token']
+                
+                # Add manual token
+                if config.get('manual_token'):
+                    tokens_data['manual_p-b'] = config['manual_token']
+                
+                # Save tokens
+                import json
+                with open(token_file, 'w') as f:
+                    json.dump(tokens_data, f, indent=2)
+                
+                self.status_bar.showMessage(
+                    f"Saved {len(tokens_data)} token(s) to configuration", 2000
+                )
+            
+            # Apply database settings
+            if config.get('database_path'):
+                # TODO: Update database path in settings
+                pass
+            
+            # Apply extraction settings  
+            if config.get('auto_extraction'):
+                # TODO: Setup automatic extraction timer
+                pass
+            
+        except Exception as e:
+            QMessageBox.warning(
+                self,
+                "Configuration Error",
+                f"Failed to apply setup configuration: {str(e)}"
+            )
     
     def show_statistics(self):
         """Show database statistics."""
