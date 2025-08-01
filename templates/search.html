@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div x-data="searchApp()" class="space-y-6">
+    <div class="bg-white p-6 rounded-lg shadow">
+        <h2 class="text-xl font-bold mb-4">Search Conversations</h2>
+        <form @submit.prevent="search()" class="space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <input x-model="query" type="text" placeholder="Search text..."
+                       class="border p-2 rounded w-full">
+                <input x-model="botFilter" type="text" placeholder="Bot name..."
+                       class="border p-2 rounded w-full">
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <input x-model="dateFrom" type="date" class="border p-2 rounded">
+                <input x-model="dateTo" type="date" class="border p-2 rounded">
+                <select x-model="limit" class="border p-2 rounded">
+                    <option value="25">25 results</option>
+                    <option value="50">50 results</option>
+                    <option value="100">100 results</option>
+                </select>
+            </div>
+            <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">
+                Search
+            </button>
+        </form>
+    </div>
+
+    <div x-show="results.length > 0" class="bg-white p-6 rounded-lg shadow">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-bold">Results (<span x-text="results.length"></span>)</h3>
+            <div class="space-x-2">
+                <button @click="exportData('json')" class="bg-green-600 text-white px-3 py-1 rounded text-sm">JSON</button>
+                <button @click="exportData('csv')" class="bg-green-600 text-white px-3 py-1 rounded text-sm">CSV</button>
+                <button @click="exportData('markdown')" class="bg-green-600 text-white px-3 py-1 rounded text-sm">Markdown</button>
+            </div>
+        </div>
+
+        <div class="space-y-3">
+            <template x-for="conv in results" :key="conv.id">
+                <div class="border p-4 rounded hover:bg-gray-50">
+                    <h4 class="font-semibold text-blue-600" x-text="conv.title"></h4>
+                    <p class="text-sm text-gray-600">
+                        <span x-text="conv.bot_name || 'Unknown Bot'"></span> •
+                        <span x-text="conv.created_at || 'Unknown Date'"></span> •
+                        <span x-text="conv.message_count || 0"></span> messages
+                    </p>
+                    <div class="mt-2" x-show="conv.tags">
+                        <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded" x-text="conv.tags"></span>
+                    </div>
+                    <div class="mt-2 space-x-2">
+                        <a :href="conv.url" target="_blank" class="text-blue-600 text-sm hover:underline">Open in Poe →</a>
+                        <button @click="viewDetails(conv.id)" class="text-green-600 text-sm hover:underline">View Details</button>
+                    </div>
+                </div>
+            </template>
+        </div>
+    </div>
+</div>
+
+<script>
+function searchApp() {
+    return {
+        query: '',
+        botFilter: '',
+        dateFrom: '',
+        dateTo: '',
+        limit: 50,
+        results: [],
+
+        async search() {
+            const formData = new FormData();
+            formData.append('query', this.query);
+            formData.append('bot_filter', this.botFilter);
+            formData.append('date_from', this.dateFrom);
+            formData.append('date_to', this.dateTo);
+            formData.append('limit', this.limit);
+
+            const response = await fetch('/api/search', {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await response.json();
+            this.results = data.results || [];
+        },
+
+        async exportData(format) {
+            const params = new URLSearchParams({
+                query: this.query,
+                bot_filter: this.botFilter
+            });
+            window.open(`/api/export/${format}?${params}`);
+        },
+
+        async viewDetails(convId) {
+            const response = await fetch(`/api/conversation/${convId}`);
+            const conv = await response.json();
+            alert(`Title: ${conv.title}
+Bot: ${conv.bot_name}
+Messages: ${conv.message_count}
+Content: ${conv.content ? conv.content.substring(0, 200) + '...' : 'No content available'}`);
+        }
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+    <div class="bg-white p-6 rounded-lg shadow">
+        <h3 class="text-lg font-semibold text-gray-700">Total Conversations</h3>
+        <p class="text-3xl font-bold text-blue-600">{{ stats.total_conversations }}</p>
+    </div>
+    <div class="bg-white p-6 rounded-lg shadow">
+        <h3 class="text-lg font-semibold text-gray-700">Unique Bots</h3>
+        <p class="text-3xl font-bold text-green-600">{{ stats.unique_bots }}</p>
+    </div>
+    <div class="bg-white p-6 rounded-lg shadow">
+        <h3 class="text-lg font-semibold text-gray-700">Avg Messages</h3>
+        <p class="text-3xl font-bold text-purple-600">{{ stats.avg_messages }}</p>
+    </div>
+    <div class="bg-white p-6 rounded-lg shadow">
+        <h3 class="text-lg font-semibold text-gray-700">Date Range</h3>
+        <p class="text-sm text-gray-600">{{ stats.earliest_date }} to {{ stats.latest_date }}</p>
+    </div>
+</div>
+
+<div class="bg-white p-6 rounded-lg shadow">
+    <h2 class="text-xl font-bold mb-4">Quick Actions</h2>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <button onclick="extractConversations()"
+                class="bg-blue-600 text-white p-4 rounded-lg hover:bg-blue-700">
+            Extract New Conversations
+        </button>
+        <a href="/search"
+           class="bg-green-600 text-white p-4 rounded-lg hover:bg-green-700 text-center block">
+            Search Conversations
+        </a>
+        <button onclick="exportAll()"
+                class="bg-purple-600 text-white p-4 rounded-lg hover:bg-purple-700">
+            Export All Data
+        </button>
+    </div>
+</div>
+
+<script>
+async function extractConversations() {
+    if (!confirm('This may take several minutes. Continue?')) return;
+
+    const response = await fetch('/api/extract', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: 'limit=25&headless=true'
+    });
+    const result = await response.json();
+    alert(result.success ? 'Extraction completed!' : 'Error: ' + result.error);
+    if (result.success) location.reload();
+}
+
+async function exportAll() {
+    window.open('/api/export/json');
+}
+</script>
+{% endblock %}

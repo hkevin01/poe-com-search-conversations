@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="bg-white p-6 rounded-lg shadow max-w-2xl mx-auto">
+    <h2 class="text-xl font-bold mb-4">Authentication Settings</h2>
+
+    <form id="settingsForm" class="space-y-4">
+        <div>
+            <label class="block text-sm font-medium mb-1">p-b Token (Required)</label>
+            <input name="p_b" type="text" value="{{ config.get('p-b', '') }}"
+                   class="border p-2 rounded w-full" placeholder="Your p-b token from Poe.com cookies">
+        </div>
+
+        <div>
+            <label class="block text-sm font-medium mb-1">p-lat Token (Optional)</label>
+            <input name="p_lat" type="text" value="{{ config.get('p-lat', '') }}"
+                   class="border p-2 rounded w-full" placeholder="Your p-lat token">
+        </div>
+
+        <div>
+            <label class="block text-sm font-medium mb-1">formkey (Optional)</label>
+            <input name="formkey" type="text" value="{{ config.get('formkey', '') }}"
+                   class="border p-2 rounded w-full" placeholder="Your formkey token">
+        </div>
+
+        <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">
+            Save Settings
+        </button>
+    </form>
+
+    <div class="mt-6 p-4 bg-blue-50 rounded">
+        <h3 class="font-semibold text-blue-800">How to get tokens:</h3>
+        <ol class="list-decimal list-inside text-sm text-blue-700 mt-2 space-y-1">
+            <li>Open Poe.com in your browser</li>
+            <li>Open Developer Tools (F12)</li>
+            <li>Go to Application/Storage → Cookies → https://poe.com</li>
+            <li>Copy the values for p-b (required), p-lat and formkey (optional)</li>
+        </ol>
+    </div>
+</div>
+
+<script>
+document.getElementById('settingsForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+
+    const response = await fetch('/api/settings', {
+        method: 'POST',
+        body: formData
+    });
+
+    const result = await response.json();
+    alert(result.success ? 'Settings saved!' : 'Error: ' + result.message);
+});
+</script>
+{% endblock %}
