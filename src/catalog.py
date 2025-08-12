@@ -3,7 +3,10 @@ import sqlite3
 from contextlib import contextmanager
 from typing import Any, Dict, Optional
 
-DEFAULT_DB_PATH = os.environ.get("POE_CATALOG_DB", os.path.join("output", "catalog.sqlite"))
+DEFAULT_DB_PATH = os.environ.get(
+    "POE_CATALOG_DB",
+    os.path.join("output", "catalog.sqlite"),
+)
 
 SCHEMA_SQL = """
 PRAGMA journal_mode=WAL;
@@ -44,13 +47,18 @@ CREATE TABLE IF NOT EXISTS messages (
   FOREIGN KEY (conversation_graph_id) REFERENCES conversations(graph_id)
 );
 
-CREATE INDEX IF NOT EXISTS idx_conversations_updated_at ON conversations(updated_at);
-CREATE INDEX IF NOT EXISTS idx_messages_conversation ON messages(conversation_graph_id);
-CREATE INDEX IF NOT EXISTS idx_messages_updated_at ON messages(updated_at);
+CREATE INDEX IF NOT EXISTS idx_conversations_updated_at
+  ON conversations(updated_at);
+CREATE INDEX IF NOT EXISTS idx_messages_conversation
+  ON messages(conversation_graph_id);
+CREATE INDEX IF NOT EXISTS idx_messages_updated_at
+  ON messages(updated_at);
 """
+
 
 @contextmanager
 def connect(db_path: Optional[str] = None):
+    """Yield a sqlite3 connection with automatic commit and close."""
     fp = db_path or DEFAULT_DB_PATH
     os.makedirs(os.path.dirname(fp), exist_ok=True)
     conn = sqlite3.connect(fp)
@@ -60,31 +68,51 @@ def connect(db_path: Optional[str] = None):
         conn.commit()
         conn.close()
 
-def ensure_schema(db_path: Optional[str] = None):
+
+def ensure_schema(db_path: Optional[str] = None) -> None:
+    """Create database schema if it does not exist."""
     with connect(db_path) as conn:
         conn.executescript(SCHEMA_SQL)
 
-def _row_to_dict(cursor, row):
+
+def _row_to_dict(cursor, row):  # type: ignore[no-untyped-def]
     if row is None:
         return None
     cols = [c[0] for c in cursor.description]
     return {k: v for k, v in zip(cols, row)}
 
-def get_conversation(conn: sqlite3.Connection, graph_id: str) -> Optional[Dict[str, Any]]:
-    cur = conn.execute("SELECT * FROM conversations WHERE graph_id = ?", (graph_id,))
+
+def get_conversation(
+    conn: sqlite3.Connection, graph_id: str
+) -> Optional[Dict[str, Any]]:
+    cur = conn.execute(
+        "SELECT * FROM conversations WHERE graph_id = ?",
+        (graph_id,),
+    )
     return _row_to_dict(cur, cur.fetchone())
 
-def get_message(conn: sqlite3.Connection, graph_id: str) -> Optional[Dict[str, Any]]:
-    cur = conn.execute("SELECT * FROM messages WHERE graph_id = ?", (graph_id,))
+
+def get_message(
+    conn: sqlite3.Connection, graph_id: str
+) -> Optional[Dict[str, Any]]:
+    cur = conn.execute(
+        "SELECT * FROM messages WHERE graph_id = ?",
+        (graph_id,),
+    )
     return _row_to_dict(cur, cur.fetchone())
 
-def upsert_conversation(conn: sqlite3.Connection, rec: Dict[str, Any]):
+
+def upsert_conversation(conn: sqlite3.Connection, rec: Dict[str, Any]) -> None:
     sql = """
-    INSERT INTO conversations (graph_id, title, slug, url, created_at, updated_at,
-        parent_graph_id, export_md_path, export_assets_path, content_hash, word_count, page_order, last_indexed_at)
-    VALUES (:graph_id, :title, :slug, :url, :created_at, :updated_at,
-        :parent_graph_id, :export_md_path, :export_assets_path, :content_hash, :word_count, :page_order, :last_indexed_at)
-    ON CONFLICT(graph_id) DO UPDATE SET
+    INSERT INTO conversations (
+        graph_id, title, slug, url, created_at, updated_at,
+        parent_graph_id, export_md_path, export_assets_path,
+        content_hash, word_count, page_order, last_indexed_at
+    ) VALUES (
+        :graph_id, :title, :slug, :url, :created_at, :updated_at,
+        :parent_graph_id, :export_md_path, :export_assets_path,
+        :content_hash, :word_count, :page_order, :last_indexed_at
+    ) ON CONFLICT(graph_id) DO UPDATE SET
         title = excluded.title,
         slug = excluded.slug,
         url = excluded.url,
@@ -100,13 +128,19 @@ def upsert_conversation(conn: sqlite3.Connection, rec: Dict[str, Any]):
     """
     conn.execute(sql, rec)
 
-def upsert_message(conn: sqlite3.Connection, rec: Dict[str, Any]):
+
+def upsert_message(conn: sqlite3.Connection, rec: Dict[str, Any]) -> None:
     sql = """
-    INSERT INTO messages (graph_id, conversation_graph_id, title, slug, author, role, ordinal,
-        created_at, updated_at, parent_graph_id, export_md_path, export_assets_path, content_hash, word_count, excerpt, last_indexed_at)
-    VALUES (:graph_id, :conversation_graph_id, :title, :slug, :author, :role, :ordinal,
-        :created_at, :updated_at, :parent_graph_id, :export_md_path, :export_assets_path, :content_hash, :word_count, :excerpt, :last_indexed_at)
-    ON CONFLICT(graph_id) DO UPDATE SET
+    INSERT INTO messages (
+        graph_id, conversation_graph_id, title, slug, author, role,
+        ordinal, created_at, updated_at, parent_graph_id, export_md_path,
+        export_assets_path, content_hash, word_count, excerpt, last_indexed_at
+    ) VALUES (
+        :graph_id, :conversation_graph_id, :title, :slug, :author, :role,
+        :ordinal, :created_at, :updated_at, :parent_graph_id, :export_md_path,
+    :export_assets_path, :content_hash, :word_count, :excerpt,
+    :last_indexed_at
+    ) ON CONFLICT(graph_id) DO UPDATE SET
         title = excluded.title,
         slug = excluded.slug,
         author = excluded.author,
