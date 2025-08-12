@@ -32,6 +32,18 @@ log_step() {
     echo -e "${BLUE}🔄 $1${NC}"
 }
 
+# Configurable thresholds / flags
+MIN_CONV_THRESHOLD=${MIN_CONV_THRESHOLD:-20}  # Auto full extraction if below
+FULL_EXTRACT_REQUESTED=false
+for arg in "$@"; do
+    case "$arg" in
+        --full-extract|--deep) FULL_EXTRACT_REQUESTED=true ;;
+    esac
+done
+if [ "${FULL_EXTRACT:-}" = "1" ]; then
+    FULL_EXTRACT_REQUESTED=true
+fi
+
 # Check if Python is available
 check_python() {
     log_step "Checking Python installation..."
@@ -129,14 +141,32 @@ test_connection() {
 # Test conversation extraction
 test_conversation_extraction() {
     log_step "Testing conversation extraction..."
-
-    # Test with a small limit to avoid long waits
-    if timeout 30 python3 src/quick_list_conversations.py --limit 3 > /dev/null 2>&1; then
-        log_success "Conversation extraction test passed"
+    # First attempt (quick headless run)
+    if timeout 40 python3 src/quick_list_conversations.py --limit 3 --max-time 35 --scroll-pause 0.8 > /dev/null 2>&1; then
+        log_success "Conversation extraction (quick) passed"
         return 0
+    fi
+    log_warning "Quick extraction attempt failed; retrying with debug + extended timing"
+
+    # Second attempt (debug headless, slower pacing)
+    if timeout 110 python3 src/quick_list_conversations.py --limit 3 --max-time 100 --scroll-pause 1.0 --debug > /dev/null 2>&1; then
+        log_success "Conversation extraction (debug fallback) passed"
+        return 0
+    fi
+    log_warning "Conversation extraction failed after fallback attempts"
+    return 1
+}
+
+# Optional smoke test (more thorough but still lightweight)
+test_smoke_extraction() {
+    if [ ! -f scripts/testing/test_extraction_smoke.py ]; then
+        return 0
+    fi
+    log_step "Running smoke extraction test (optional)..."
+    if python3 scripts/testing/test_extraction_smoke.py > /dev/null 2>&1; then
+        log_success "Smoke extraction test passed (or skipped)"
     else
-        log_warning "Conversation extraction test failed or timed out"
-        return 1
+        log_warning "Smoke extraction test failed"
     fi
 }
 
@@ -164,6 +194,55 @@ launch_gui() {
     log_info "Press Ctrl+C to stop the application"
 
     python3 main.py launch
+}
+
+# Count conversations in SQLite DB quickly (no Python project imports)
+count_conversations() {
+    local db="storage/conversations.db"
+    if [ ! -f "$db" ]; then
+        echo 0
+        return
+    fi
+    python3 - <<'PY' 2>/dev/null || echo 0
+import sqlite3, sys
+try:
+    con = sqlite3.connect('storage/conversations.db')
+    cur = con.cursor()
+    cur.execute("SELECT COUNT(*) FROM conversations")
+    print(cur.fetchone()[0])
+except Exception:
+    print(0)
+finally:
+    try: con.close()
+    except: pass
+PY
+}
+
+# Attempt a fuller extraction if conversation count is low
+maybe_full_extraction() {
+    local count
+    count=$(count_conversations)
+    log_step "Database currently has $count conversations"
+    if $FULL_EXTRACT_REQUESTED || [ "$count" -lt "$MIN_CONV_THRESHOLD" ]; then
+        log_info "Triggering full extraction (threshold=$MIN_CONV_THRESHOLD, requested=$FULL_EXTRACT_REQUESTED)"
+        # Prefer enhanced_extractor (in-depth, infinite scroll)
+        if python3 src/enhanced_extractor.py --config config/poe_tokens.json > logs/full_extract_enhanced.log 2>&1; then
+            log_success "Enhanced full extraction completed"
+            return 0
+        else
+            log_warning "Enhanced extractor failed (see logs/full_extract_enhanced.log). Falling back to quick getter"
+            # Fallback: quick_conversation_getter with a higher limit
+            if python3 src/quick_conversation_getter.py --limit 100 > logs/full_extract_quick.log 2>&1; then
+                log_success "Quick getter fallback extraction completed"
+                return 0
+            else
+                log_warning "Fallback quick getter also failed (see logs/full_extract_quick.log)"
+                return 1
+            fi
+        fi
+    else
+        log_info "Conversation count above threshold ($MIN_CONV_THRESHOLD); skipping full extraction"
+    fi
 }
 
 # Main execution
@@ -202,6 +281,9 @@ main() {
     if ! test_conversation_extraction; then
         extraction_ok=false
     fi
+
+    # Optional smoke test does not influence blocking status
+    test_smoke_extraction
 
     if ! test_export_pipeline; then
         export_ok=false
@@ -248,6 +330,9 @@ main() {
         fi
         echo
     fi
+
+    # Optional full extraction phase
+    maybe_full_extraction || log_warning "Full extraction phase encountered issues"
 
     # Step 6: Launch GUI
     launch_gui

@@ -1,0 +1,48 @@
+name: Smoke Extraction
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Smoke extraction (skips if no secret)
+        env:
+          P_B_TOKEN: ${{ secrets.P_B_TOKEN }}
+        run: |
+          if [ -z "$P_B_TOKEN" ]; then
+            echo "No P_B_TOKEN secret provided; skipping smoke test." | tee -a $GITHUB_STEP_SUMMARY
+            exit 0
+          fi
+          mkdir -p config
+          printf '{"p-b": "%s"}' "$P_B_TOKEN" > config/poe_tokens.json
+          echo "Wrote config/poe_tokens.json" >> $GITHUB_STEP_SUMMARY
+          python scripts/testing/test_extraction_smoke.py --debug || echo "Smoke test non-blocking failure"
+
+      - name: Upload debug artifacts (always)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-artifacts
+          path: |
+            debug_artifacts/*
+            exports/*.json
+          if-no-files-found: ignore

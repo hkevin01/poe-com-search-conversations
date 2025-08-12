@@ -152,13 +152,101 @@ python src/quick_list_conversations.py --config /path/to/your/tokens.json
 python src/quick_list_conversations.py --no-headless
 ```
 
+### Full scrolling collection with tuning:
+```bash
+# Collect all conversations (automatic scrolling)
+python src/quick_list_conversations.py --config config/poe_tokens.json \
+   --max-scrolls 300 --scroll-pause 0.8
+
+# Limit to first 50 conversations for a quick test
+python src/quick_list_conversations.py --limit 50
+
+# Save to a specific output path
+python src/quick_list_conversations.py --output exports/conversations_latest.json
+
+# Debug / headed mode with generous timing (recommended if headless finds 0)
+python src/quick_list_conversations.py --config config/poe_tokens.json \
+   --no-headless --debug --scroll-pause 1.0 --max-time 180
+
+# Headless with extended time & limit for a smoke test
+python src/quick_list_conversations.py --config config/poe_tokens.json \
+   --debug --scroll-pause 1.0 --max-time 200 --limit 25
+```
+
+### Troubleshooting extraction
+
+```text
+- If you see [ERROR] Authentication failed (redirected to /login): refresh your p-b cookie (and optional p-lat, formkey).
+- If headless returns 0 conversations, try --no-headless or increase --scroll-pause (e.g. 1.0 or 1.5).
+- If the UI layout changes, the script now collects both /chat/ and /c/ styles and auto-detects the scroll container.
+- Still failing? Re-run with:  --debug --no-headless --scroll-pause 1.2 --max-time 240
+- On failure with --debug, inspect debug_artifacts/screenshot.png and debug_artifacts/page.html
+```
+
+## Smoke Test (New)
+
+A fast, low‑risk extraction check is available to validate that authentication,
+selectors, and scrolling still work after changes or before a longer run.
+
+### Run Manually
+
+```bash
+python scripts/testing/test_extraction_smoke.py \
+   --config config/poe_tokens.json  # optional, auto-detected if omitted
+```
+
+Behavior:
+
+- Headless by default (add `--no-headless` for debugging)
+- Limits run time (≈90s default) and conversation count (default 5)
+- Produces an output JSON in `exports/` and exits 0 if driver succeeded even
+   when 0 conversations were found (to allow layout changes without blocking CI)
+- In `--debug` mode saves `debug_artifacts/` (HTML + screenshot) for inspection
+
+### Via run.sh
+
+`./run.sh` now invokes a smoke extraction near the end (non‑blocking). Review
+its logs for a quick health signal; failures will be reported but won't stop
+other tasks unless earlier critical setup failed.
+
+### Suggested CI Pattern
+
+Add a conditional job that only runs when secret tokens are available:
+
+```yaml
+jobs:
+   smoke:
+      runs-on: ubuntu-latest
+      if: secrets.P_B_TOKEN != ''
+      steps:
+         - uses: actions/checkout@v4
+         - uses: actions/setup-python@v5
+            with:
+               python-version: '3.11'
+         - name: Install deps
+            run: pip install -r requirements.txt
+         - name: Write tokens
+            run: |
+               mkdir -p config
+               jq -n --arg pb "$P_B_TOKEN" '{"p-b":$pb}' > config/poe_tokens.json
+            env:
+               P_B_TOKEN: ${{ secrets.P_B_TOKEN }}
+         - name: Smoke extraction
+            run: python scripts/testing/test_extraction_smoke.py --debug
+```
+
+Keep this lightweight to avoid rate limits; the full export / catalog tests
+should remain separate.
+
 ## Output
 
 The tool will:
+
 1. Display found conversations in the terminal
 2. Save results to `conversations_YYYYMMDD_HHMMSS.json`
 
 Example output format:
+
 ```json
 [
   {
@@ -172,7 +260,7 @@ Example output format:
 
 ## Project Structure
 
-```
+```text
 poe-com-search-conversations/
 ├── src/
 │   └── quick_list_conversations.py    # Main script
@@ -190,7 +278,7 @@ poe-com-search-conversations/
 
 ## Troubleshooting
 
-### Common Issues:
+### Common Issues
 
 1. **ChromeDriver not found:**
    - Install webdriver-manager: `pip install webdriver-manager`

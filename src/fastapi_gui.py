@@ -1,4 +1,3 @@
-import asyncio
 import json
 import os
 import sqlite3
@@ -6,12 +5,19 @@ import subprocess
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional
 
-from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
-from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
+from fastapi import FastAPI, Form, HTTPException, Request
+from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+
+# Import our robust search backend
+try:
+    from search_backend import search_conversations_fallback, search_messages
+except ImportError:
+    # Fallback if module not found
+    search_messages = None
+    search_conversations_fallback = None
 
 app = FastAPI(title="Poe.com Conversation Search", version="2.0.0")
 
@@ -72,36 +78,55 @@ class ConversationDB:
 
     def search_conversations(self, query: str = "", bot_filter: str = "",
                            date_from: str = "", date_to: str = "", limit: int = 50):
-        """Search conversations with filters"""
+        """Search conversations with robust FTS fallback"""
+        # Try using the new robust search backend first
+        if search_messages:
+            try:
+                # Check if catalog.sqlite exists
+                catalog_path = "output/catalog.sqlite"
+                if os.path.exists(catalog_path):
+                    results = search_messages(
+                        catalog_path, query, bot_filter, date_from, date_to, limit, 0
+                    )
+                    if results:
+                        return results
+                # Fallback to conversations table search
+                if search_conversations_fallback:
+                    results = search_conversations_fallback(
+                        catalog_path, query, bot_filter, date_from, date_to, limit, 0
+                    )
+                    if results:
+                        return results
+            except Exception as e:
+                print(f"Robust search failed: {e}")
+
+        # Legacy fallback to original DB
         conn = sqlite3.connect(self.db_path)
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
 
-        if query:
-            # Use FTS for text search
-            sql = '''
-                SELECT c.* FROM conversations c
-                JOIN conversations_fts fts ON c.id = fts.rowid
-                WHERE conversations_fts MATCH ?
-            '''
-            params = [query]
-        else:
-            sql = 'SELECT * FROM conversations WHERE 1=1'
-            params = []
+        where_parts = []
+        params = []
+
+        if query.strip():
+            where_parts.append("(title LIKE ? OR content LIKE ?)")
+            like_query = f"%{query.strip()}%"
+            params.extend([like_query, like_query])
 
         if bot_filter:
-            sql += ' AND bot_name LIKE ?'
-            params.append(f'%{bot_filter}%')
+            where_parts.append("bot_name LIKE ?")
+            params.append(f"%{bot_filter}%")
 
         if date_from:
-            sql += ' AND created_at >= ?'
+            where_parts.append("created_at >= ?")
             params.append(date_from)
 
         if date_to:
-            sql += ' AND created_at <= ?'
+            where_parts.append("created_at <= ?")
             params.append(date_to)
 
-        sql += ' ORDER BY extracted_at DESC LIMIT ?'
+        where_clause = " AND ".join(where_parts) if where_parts else "1=1"
+        sql = f"SELECT * FROM conversations WHERE {where_clause} ORDER BY created_at DESC LIMIT ?"
         params.append(limit)
 
         cursor.execute(sql, params)
