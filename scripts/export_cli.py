@@ -2,8 +2,16 @@ import argparse
 import glob
 import json
 import os
-from typing import Any, Dict, List
+import sys
+from typing import Any, Dict, List, Optional
 
+# Add project root to Python path for imports
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+
+# Import after path setup to avoid module not found errors
+# pylint: disable=wrong-import-position
 from src.catalog import (connect, ensure_schema, upsert_conversation,
                          upsert_message)
 from src.exporter import export_conversation_package
@@ -151,8 +159,72 @@ def run_index_only(args):
                 )
 
 
+def _load_latest_exports_json(exports_dir: str = "exports") -> Optional[str]:
+    """Return path to most recent conversations_*.json file if present.
+
+    Acts as a lightweight stand-in for a real network scraper while we
+    iterate on the richer export/catalog pipeline. This lets the export
+    CLI produce output from previously captured listings without hitting
+    Poe.com again (useful for tests / offline work).
+    """
+    pattern = os.path.join(exports_dir, "conversations_*.json")
+    files = sorted(glob.glob(pattern), reverse=True)
+    return files[0] if files else None
+
+
 def get_conversations_from_scraper() -> List[Dict[str, Any]]:
-    return []
+    """Return conversation dicts with embedded messages.
+
+    Current implementation is a pragmatic adapter that consumes the
+    latest exported listing JSON (created by pre-existing tooling) and
+    fabricates a single stub message per conversation. This is enough to
+    exercise the export pipeline end‑to‑end. A future enhancement can
+    replace this with a Selenium / API powered extractor that fetches
+    full message histories.
+    """
+    listing_path = _load_latest_exports_json()
+    if not listing_path:
+        return []
+    with open(listing_path, "r", encoding="utf-8") as f:
+        try:
+            raw = json.load(f)
+        except json.JSONDecodeError:
+            return []
+
+    conversations: List[Dict[str, Any]] = []
+    for item in raw[:50]:  # soft cap to avoid huge bursts
+        url = item.get("url") or ""
+        # Derive a stable graph_id from the URL tail (after last '/')
+        tail = url.rstrip("/").split("/")[-1] if url else item.get("id")
+        graph_id = f"conv-{tail}" if tail else f"conv-{item.get('id')}"
+        title = (item.get("title") or "Untitled").splitlines()[0][:120]
+        created = os.path.getmtime(listing_path)
+        created_iso = __import__("datetime").datetime.utcfromtimestamp(
+            created
+        ).isoformat() + "Z"
+        # Single stub message (placeholder for future full scrape)
+        msg_id = f"{graph_id}-m1"
+        msg_content = title
+        conversations.append(
+            {
+                "graph_id": graph_id,
+                "title": title,
+                "url": url,
+                "created_at": created_iso,
+                "updated_at": created_iso,
+                "messages": [
+                    {
+                        "graph_id": msg_id,
+                        "author": "system",
+                        "role": "system",
+                        "content": msg_content,
+                        "created_at": created_iso,
+                        "updated_at": created_iso,
+                    }
+                ],
+            }
+        )
+    return conversations
 
 
 def main():

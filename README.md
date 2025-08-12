@@ -29,10 +29,10 @@ A Python tool for listing and searching conversations from Poe.com using Seleniu
    # Linux/Mac
    chmod +x setup.sh
    ./setup.sh
-   
+
    # Windows
    setup.bat
-   
+
    # Or use Python (cross-platform)
    python setup.py
    ```
@@ -41,7 +41,7 @@ A Python tool for listing and searching conversations from Poe.com using Seleniu
    ```bash
    # Copy the example config file
    cp config/poe_tokens.json.example config/poe_tokens.json
-   
+
    # Edit with your actual tokens
    nano config/poe_tokens.json
    ```
@@ -56,10 +56,10 @@ A Python tool for listing and searching conversations from Poe.com using Seleniu
    ```bash
    # Linux/Mac
    source venv/bin/activate
-   
+
    # Windows
    venv\Scripts\activate.bat
-   
+
    # Or use the activation script
    ./activate.sh
    ```
@@ -90,7 +90,7 @@ nano config/poe_tokens.json
 # Recommended: Launch with automatic data population
 python main.py launch
 
-# Or launch GUI directly (may be empty initially)  
+# Or launch GUI directly (may be empty initially)
 python main.py gui
 
 # Run system health check
@@ -104,7 +104,7 @@ python main.py test
 # Environment setup
 python main.py setup              # First-time setup and dependencies
 
-# Application launch  
+# Application launch
 python main.py launch             # Launch GUI with auto data population
 python main.py gui                # Launch GUI directly
 
@@ -225,3 +225,46 @@ poe-com-search-conversations/
 ## License
 
 This project is for educational and personal use only. Please respect Poe.com's terms of service.
+
+## Export & Catalog Pipeline (New)
+
+The project now includes a metadata‑rich export pipeline producing:
+
+- Markdown transcript per conversation
+- A merged `merged.jsonl` containing all messages with metadata
+- A per‑message `section.jsonl` file under each message slug directory
+- A SQLite catalog (`catalog.sqlite`) with `conversations` and `messages` tables
+
+### Quick CLI Usage
+
+```bash
+python scripts/export_cli.py --build-db --output-dir output
+
+# Rebuild DB only from existing exported artifacts
+python scripts/export_cli.py --index-only --db-path output/catalog.sqlite
+
+# Export only conversations updated since timestamp
+python scripts/export_cli.py --build-db --since 2025-01-01T00:00:00Z
+```
+
+### Schema Overview
+
+Tables:
+
+`conversations(graph_id PRIMARY KEY, title, slug, url, created_at, updated_at, parent_graph_id, export_md_path, export_assets_path, content_hash, word_count, page_order, last_indexed_at)`
+
+`messages(graph_id PRIMARY KEY, conversation_graph_id, title, slug, author, role, ordinal, created_at, updated_at, parent_graph_id, export_md_path, export_assets_path, content_hash, word_count, excerpt, last_indexed_at)`
+
+### Change Detection
+
+Exports are skipped if both the stored content hash matches and the new `updated_at` is not greater than the stored value. Use `--since` to pre‑filter older conversations before hashing.
+
+### Index-Only Mode
+
+`--index-only` walks existing output folders, reads `merged.jsonl` files, and repopulates the catalog without re‑rendering Markdown or re‑scraping.
+
+### Roadmap
+
+- Replace stub scraper adapter with full Selenium/API conversation fetch
+- Add FastAPI endpoints for catalog querying
+- Extend tests for per‑message JSONL integrity and search exposure
